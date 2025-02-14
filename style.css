@@ -126,29 +126,14 @@ h1 {
     font-weight: bold;
 }
 
-@keyframes flipIn {
-    from {
-        transform: rotateX(90deg);
-        opacity: 0;
-    }
-    to {
-        transform: rotateX(0);
-        opacity: 1;
-    }
+.previous-solutions {
+    margin: 30px auto;
+    max-width: 800px;
+    text-align: center;
 }
 
-@media (max-width: 600px) {
-    .logo {
-        width: 250px;
-    }
-    
-    .letter-tile {
-        font-size: 1.5em;
-        padding: 10px;
-        min-width: 30px;
-    }
-    
-    .word-space {
-        width: 30px;
-    }
-}
+#toggle-history {
+    background: var(--gold);
+    color: var(--dark-blue);
+    border: none;
+    padding: 12px 24
