@@ -1,19 +1,38 @@
 import requests
 import json
 import sys
+import datetime
+import pytz
 
 API_URL = "https://www.wheeloffortune.com/api/bonus-puzzle-data"
 
-def find_bonus_puzzle_component(data):
-    """Find the bonus puzzle component in the API response"""
-    if 'components' not in data:
-        return None
-    for component in data.get('components', []):
-        if component.get('componentName') == 'bonusPuzzle':
-            return component.get('data', {})
-    return None
+def is_already_updated():
+    """Check if we've already updated today's puzzle"""
+    try:
+        with open('last_updated.txt', 'r') as f:
+            last_date = f.read().strip()
+        
+        eastern = pytz.timezone('America/New_York')
+        current_date = datetime.datetime.now(eastern).strftime('%Y-%m-%d')
+        return last_date == current_date
+        
+    except FileNotFoundError:
+        return False
+
+def record_update():
+    """Record today's date as last update"""
+    eastern = pytz.timezone('America/New_York')
+    current_date = datetime.datetime.now(eastern).strftime('%Y-%m-%d')
+    with open('last_updated.txt', 'w') as f:
+        f.write(current_date)
+
+# ... (keep the existing find_bonus_puzzle_component function) ...
 
 def main():
+    if is_already_updated():
+        print("Already updated today. Exiting.")
+        return False
+
     try:
         response = requests.get(API_URL, timeout=10)
         response.raise_for_status()
@@ -24,38 +43,17 @@ def main():
             print("Error: Bonus puzzle data not found", file=sys.stderr)
             return False
 
-        raw_solution = puzzle_data.get('solution', '')
-        solution = ' '.join(
-            part.strip() 
-            for part in raw_solution.split('/') 
-            if part.strip()
-        ).upper()
-        date = puzzle_data.get('date', 'Unknown date')
-
-        with open('data.json', 'r') as f:
-            existing_data = json.load(f)
+        # ... (keep existing solution processing logic) ...
 
         if date != existing_data.get('date') or solution != existing_data.get('solution'):
             with open('data.json', 'w') as f:
                 json.dump({"date": date, "solution": solution}, f)
             
-            # Update index.html timestamp to bust cache
-            with open('index.html', 'r') as f:
-                html = f.read()
-            new_html = html.replace('?v=1.1', f'?v={int(time.time())}')
-            with open('index.html', 'w') as f:
-                f.write(new_html)
-
+            record_update()  # Add this line
             print(f"Updated: {date} - {solution}")
             return True
 
         print("No changes detected")
         return False
 
-    except Exception as e:
-        print(f"Error: {str(e)}", file=sys.stderr)
-        return False
-
-if __name__ == "__main__":
-    success = main()
-    sys.exit(0 if success else 1)
+    # ... (keep existing error handling) ...
