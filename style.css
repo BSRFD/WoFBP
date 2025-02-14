@@ -50,15 +50,33 @@ h1 {
 }
 
 .puzzle-display {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
-    gap: 10px;
-    background: #000080;
-    padding: 20px;
-    border-radius: 10px;
-    min-height: 100px;
-    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
     justify-content: center;
+}
+
+.word-container {
+    display: flex;
+    gap: 8px;
+}
+
+.word-space {
+    width: 40px;
+    height: 60px;
+    position: relative;
+}
+
+.word-space::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 6px;
+    height: 6px;
+    background: var(--gold);
+    border-radius: 50%;
 }
 
 .letter-tile {
