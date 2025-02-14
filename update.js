@@ -32,8 +32,6 @@ async function fetchData() {
             }
         });
 
-        // Load history after main data
-        await loadHistory();
     } catch (error) {
         console.error('Error:', error);
     }
@@ -45,7 +43,6 @@ async function loadHistory() {
         const pastSolutions = await response.json();
         const list = document.getElementById('solution-list');
         list.innerHTML = pastSolutions
-            .reverse()
             .map(item => `<li><strong>${item.date}:</strong> ${item.solution}</li>`)
             .join('');
     } catch (error) {
@@ -56,14 +53,13 @@ async function loadHistory() {
 function toggleHistory() {
     const content = document.getElementById('history-content');
     const button = document.getElementById('toggle-history');
-    const list = document.getElementById('solution-list');
     
     content.classList.toggle('hidden');
     button.textContent = content.classList.contains('hidden') 
         ? 'Show Previous Solutions' 
         : 'Hide Previous Solutions';
     
-    if (!content.classList.contains('hidden') && list.children.length === 0) {
+    if (!content.classList.contains('hidden') && document.getElementById('solution-list').children.length === 0) {
         loadHistory();
     }
 }
