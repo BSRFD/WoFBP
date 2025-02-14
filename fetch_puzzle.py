@@ -6,54 +6,75 @@ import pytz
 
 API_URL = "https://www.wheeloffortune.com/api/bonus-puzzle-data"
 
-def is_already_updated():
-    """Check if we've already updated today's puzzle"""
-    try:
-        with open('last_updated.txt', 'r') as f:
-            last_date = f.read().strip()
-        
-        eastern = pytz.timezone('America/New_York')
-        current_date = datetime.datetime.now(eastern).strftime('%Y-%m-%d')
-        return last_date == current_date
-        
-    except FileNotFoundError:
-        return False
-
-def record_update():
-    """Record today's date as last update"""
+def should_check_today():
+    """Check if current time is within our monitoring window"""
     eastern = pytz.timezone('America/New_York')
-    current_date = datetime.datetime.now(eastern).strftime('%Y-%m-%d')
-    with open('last_updated.txt', 'w') as f:
-        f.write(current_date)
-
-# ... (keep the existing find_bonus_puzzle_component function) ...
+    now = datetime.datetime.now(eastern)
+    
+    # Only check Mon-Fri between 16:50 and 17:20 ET
+    if now.weekday() >= 5:  # 5=Saturday, 6=Sunday
+        return False
+        
+    current_time = now.time()
+    return datetime.time(16, 50) <= current_time <= datetime.time(17, 20)
 
 def main():
-    if is_already_updated():
-        print("Already updated today. Exiting.")
+    if not should_check_today():
+        print("Outside monitoring window")
         return False
 
     try:
+        # Load existing data
+        try:
+            with open('data.json', 'r') as f:
+                existing_data = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            existing_data = {"date": "", "solution": ""}
+
+        # Fetch API data
         response = requests.get(API_URL, timeout=10)
         response.raise_for_status()
         api_data = response.json()
 
-        puzzle_data = find_bonus_puzzle_component(api_data)
+        # Find puzzle data
+        puzzle_data = None
+        for component in api_data.get('components', []):
+            if component.get('componentName') == 'bonusPuzzle':
+                puzzle_data = component.get('data', {})
+                break
+
         if not puzzle_data:
-            print("Error: Bonus puzzle data not found", file=sys.stderr)
+            print("Puzzle data not found")
             return False
 
-        # ... (keep existing solution processing logic) ...
+        # Process solution
+        raw_solution = puzzle_data.get('solution', '')
+        solution = ' '.join(
+            part.strip() 
+            for part in raw_solution.split('/') 
+            if part.strip()
+        ).upper()
+        new_date = puzzle_data.get('date', 'Unknown date')
 
-        if date != existing_data.get('date') or solution != existing_data.get('solution'):
-            with open('data.json', 'w') as f:
-                json.dump({"date": date, "solution": solution}, f)
-            
-            record_update()  # Add this line
-            print(f"Updated: {date} - {solution}")
-            return True
+        # Check if we already have this solution
+        if new_date == existing_data.get('date'):
+            print("Already have today's solution")
+            return False
 
-        print("No changes detected")
+        # Update data
+        with open('data.json', 'w') as f:
+            json.dump({
+                "date": new_date,
+                "solution": solution
+            }, f)
+
+        print(f"Updated {new_date}: {solution}")
+        return True
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
         return False
 
-    # ... (keep existing error handling) ...
+if __name__ == "__main__":
+    success = main()
+    sys.exit(0 if success else 1)
