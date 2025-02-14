@@ -145,7 +145,6 @@ h1 {
 
 .history-header:hover {
     background: #000060;
-    transform: translateY(-2px);
 }
 
 .history-header span {
@@ -164,40 +163,34 @@ h1 {
     transition: transform 0.3s ease;
 }
 
-.history-header.active .dropdown-arrow {
-    transform: rotate(225deg);
-}
-
 #history-content {
+    display: none;
     margin-top: 15px;
     background: var(--dark-blue);
     border: 3px solid var(--gold);
     border-radius: 10px;
     padding: 20px;
-    display: none;
-    opacity: 0;
-    transform: translateY(-10px);
-    transition: all 0.3s ease;
 }
 
 #history-content.visible {
     display: block;
-    opacity: 1;
-    transform: translateY(0);
 }
 
-.history-item {
+.history-solution-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    margin: 10px 0;
     background: rgba(255,255,255,0.05);
     border-radius: 5px;
-    margin: 10px 0;
-    padding: 15px;
 }
 
 .history-date {
     color: var(--gold);
     font-family: 'Passion One', cursive;
-    font-size: 1.2em;
-    margin-bottom: 5px;
+    font-size: 1.4em;
+    width: 45%;
 }
 
 .history-solution {
@@ -205,6 +198,8 @@ h1 {
     font-family: 'Roboto Condensed', sans-serif;
     font-size: 1.4em;
     font-weight: bold;
+    width: 55%;
+    text-align: right;
 }
 
 @keyframes flipIn {
@@ -233,10 +228,7 @@ h1 {
         width: 30px;
     }
     
-    .history-header span {
-        font-size: 1.2em;
-    }
-    
+    .history-date,
     .history-solution {
         font-size: 1.2em;
     }
