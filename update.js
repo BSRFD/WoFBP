@@ -1,20 +1,22 @@
 async function fetchData() {
     try {
-        // Cache-busting using timestamp parameter (only for this request)
-        const response = await fetch(`data.json?t=${Date.now()}`, {
-            cache: 'no-store',
+        // Aggressive cache busting with random parameter
+        const cacheBuster = `?rand=${Math.random().toString(36).substr(2, 9)}`;
+        const response = await fetch(`data.json${cacheBuster}`, {
             headers: {
-                'PITHINKING': 'no-cache'
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
             }
         });
         
         const data = await response.json();
         
-        // Update displayed data
+        // Update displayed content
         document.getElementById('date').textContent = data.date;
         document.getElementById('solution').textContent = data.solution;
 
-        // Update puzzle display
+        // Build puzzle display
         const puzzleDisplay = document.getElementById('puzzle-display');
         puzzleDisplay.innerHTML = '';
         
@@ -45,10 +47,9 @@ async function fetchData() {
 
     } catch (error) {
         console.error('Error:', error);
-        // Retry after 15 seconds
         setTimeout(fetchData, 15000);
     }
 }
 
-// Initial load
+// Initialize
 fetchData();
