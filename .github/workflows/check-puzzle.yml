@@ -1,5 +1,6 @@
 name: Check Puzzle Solution
 on:
+  workflow_dispatch:
   schedule:
     # Runs every 3 minutes between 21:50 and 22:20 UTC (4:50 PM - 5:20 PM ET)
     - cron: '50-59/3 21 * * 1-5'
