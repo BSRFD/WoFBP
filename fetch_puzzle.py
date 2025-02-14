@@ -6,9 +6,13 @@ API_URL = "https://www.wheeloffortune.com/api/bonus-puzzle-data"
 
 def main():
     try:
-        response = requests.get(API_URL, timeout=10)
-        response.raise_for_status()
+        print(f"Attempting to fetch data from {API_URL}")
+        response = requests.get(API_URL, timeout=10, headers={'User-Agent': 'Mozilla/5.0'})
+        print(f"Response status code: {response.status_code}")
+        print(f"Response content: {response.text[:200]}")  # Show first 200 characters
+        
         new_data = response.json()
+        print(f"Parsed JSON: {new_data}")
 
         # Validate API response
         if not isinstance(new_data, dict) or 'solution' not in new_data:
