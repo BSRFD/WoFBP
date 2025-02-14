@@ -1,15 +1,14 @@
+let historyLoaded = false;
+
 async function fetchData() {
     try {
-        // Cache-busted request for current solution
         const cacheBuster = `?rand=${Math.random().toString(36).substr(2, 9)}`;
         const response = await fetch(`data.json${cacheBuster}`);
         const data = await response.json();
         
-        // Update main display
         document.getElementById('date').textContent = data.date;
         document.getElementById('solution').textContent = data.solution;
 
-        // Build puzzle tiles
         const puzzleDisplay = document.getElementById('puzzle-display');
         puzzleDisplay.innerHTML = '';
         
@@ -36,7 +35,7 @@ async function fetchData() {
         });
 
     } catch (error) {
-        console.error('Error loading current puzzle:', error);
+        console.error('Error:', error);
     }
 }
 
@@ -44,45 +43,33 @@ async function loadHistory() {
     try {
         const response = await fetch('past-solutions.json');
         const pastSolutions = await response.json();
-        const container = document.getElementById('solution-list');
+        const list = document.getElementById('solution-list');
         
-        // Clear existing items
-        container.innerHTML = '';
-        
-        // Create solution items matching current puzzle style
-        pastSolutions.reverse().forEach(item => {
-            const solutionItem = document.createElement('div');
-            solutionItem.className = 'history-item';
-            solutionItem.innerHTML = `
-                <div class="info-box">
-                    <span class="history-date">${item.date}</span>
-                    <span class="history-solution">${item.solution}</span>
+        list.innerHTML = pastSolutions
+            .reverse()
+            .map(item => `
+                <div class="history-solution-item">
+                    <div class="history-date">${item.date}</div>
+                    <div class="history-solution">${item.solution}</div>
                 </div>
-            `;
-            container.appendChild(solutionItem);
-        });
+            `).join('');
 
+        historyLoaded = true;
     } catch (error) {
         console.error('Error loading history:', error);
-        const container = document.getElementById('solution-list');
-        container.innerHTML = '<div class="info-box">Error loading past solutions</div>';
     }
 }
 
 function toggleHistory() {
     const content = document.getElementById('history-content');
-    const header = document.querySelector('.history-header');
     const arrow = document.querySelector('.dropdown-arrow');
     
-    // Toggle visibility
-    header.classList.toggle('active');
-    content.classList.toggle('hidden');
-    arrow.style.transform = content.classList.contains('hidden') 
-        ? 'rotate(45deg)'
-        : 'rotate(225deg)';
+    content.classList.toggle('visible');
+    arrow.style.transform = content.classList.contains('visible') 
+        ? 'rotate(225deg)' 
+        : 'rotate(45deg)';
     
-    // Load history only once when first opened
-    if (!content.classList.contains('hidden') && document.getElementById('solution-list').children.length === 0) {
+    if (!historyLoaded && content.classList.contains('visible')) {
         loadHistory();
     }
 }
