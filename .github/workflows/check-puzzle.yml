@@ -2,8 +2,8 @@ name: Check Puzzle Solution
 on:
   workflow_dispatch:
   schedule:
-    - cron: '59 20 * * 1-5'    # 4:59 PM ET
-    - cron: '0-3 21 * * 1-5'   # 5:00-5:03 PM ET
+    - cron: '59 20 * * 1-5'
+    - cron: '0-3 21 * * 1-5'
 
 jobs:
   check-solution:
@@ -28,10 +28,8 @@ jobs:
     - name: Fetch puzzle data
       env:
         TZ: America/New_York
-        GITHUB_EVENT_NAME: ${{ github.event_name }}  # Critical for manual triggers
-      run: |
-        python fetch_puzzle.py || echo "Non-critical exit"
-        echo "Exit code: $?"
+        GITHUB_EVENT_NAME: ${{ github.event_name }}
+      run: python fetch_puzzle.py || echo "Non-critical exit"
 
     - name: Check for changes
       id: changes
@@ -44,6 +42,6 @@ jobs:
       run: |
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
-        git add data.json
+        git add data.json past-solutions.json
         git commit -m "Update puzzle data [skip ci]"
         git push
