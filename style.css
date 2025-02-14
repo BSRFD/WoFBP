@@ -1,0 +1,11 @@
+body {
+    font-family: Arial, sans-serif;
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+}
+#solution {
+    font-weight: bold;
+    color: #2c5f2d;
+    font-size: 1.2em;
+}
