@@ -25,7 +25,7 @@ def should_run(manual_trigger: bool):
     eastern = pytz.timezone('America/New_York')
     now = datetime.datetime.now(eastern)
     return (
-        now.weekday() < 5 and
+        now.weekday() < 5 and  # 0-4 = Mon-Fri
         datetime.time(16, 59) <= now.time() <= datetime.time(17, 3)
     )
 
@@ -37,16 +37,19 @@ def main():
         sys.exit(0)
 
     try:
-        with open('data.json', 'r') as f:
-            existing_data = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        existing_data = {"date": "", "solution": ""}
+        # Load existing data
+        try:
+            with open('data.json', 'r') as f:
+                existing_data = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            existing_data = {"date": "No data yet", "solution": "Check back later"}
 
-    try:
+        # Fetch API data
         response = requests.get(API_URL, timeout=10)
         response.raise_for_status()
         api_data = response.json()
 
+        # Extract puzzle data
         puzzle_data = None
         for component in api_data.get('components', []):
             if component.get('componentName') == 'bonusPuzzle':
@@ -57,6 +60,7 @@ def main():
             print("Error: Bonus puzzle component not found")
             sys.exit(1)
 
+        # Process solution and date
         raw_solution = puzzle_data.get('solution', '')
         solution = ' '.join(
             part.strip() 
@@ -67,35 +71,43 @@ def main():
         api_date = parse_api_date(api_date_str)
         today_date = get_eastern_date()
 
+        # Validate API date
         if api_date != today_date:
-            print("API date not today - skipping update")
+            print(f"API date {api_date_str} not today's date")
             sys.exit(0)
 
         if api_date_str == existing_data.get('date'):
             print("Already has today's solution")
             sys.exit(0)
 
-        # Update current solution
-        with open('data.json', 'w') as f:
-            json.dump({"date": api_date_str, "solution": solution}, f)
-
-        # Update past solutions
-        past_file = 'past-solutions.json'
-        past_data = []
-        if os.path.exists(past_file):
-            with open(past_file, 'r') as f:
-                past_data = json.load(f)
-        
-        if not any(entry['date'] == api_date_str for entry in past_data):
+        # Archive previous solution if valid
+        if existing_data['date'] not in ["No data yet", ""]:
+            past_file = 'past-solutions.json'
+            past_data = []
+            
+            if os.path.exists(past_file):
+                with open(past_file, 'r') as f:
+                    past_data = json.load(f)
+            
+            # Add previous solution to history
             past_data.append({
-                "date": api_date_str,
-                "solution": solution
+                "date": existing_data['date'],
+                "solution": existing_data['solution']
             })
-            past_data = past_data[-30:]  # Keep last 30 entries
+            # Keep last 30 entries
+            past_data = past_data[-30:]
+            
             with open(past_file, 'w') as f:
                 json.dump(past_data, f)
 
-        print(f"Successfully updated to {api_date_str}: {solution}")
+        # Update with new solution
+        with open('data.json', 'w') as f:
+            json.dump({
+                "date": api_date_str,
+                "solution": solution
+            }, f)
+
+        print(f"Updated to {api_date_str}: {solution}")
         sys.exit(0)
 
     except Exception as e:
