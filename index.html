@@ -1,18 +1,37 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Wheel of Fortune Daily Puzzle</title>
+    <meta charset="UTF-8">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <link rel="stylesheet" href="style.css?v=1.1">
+    <title>Wheel of Fortune Daily Puzzle</title>
+    <link rel="stylesheet" href="style.css?v=2.0">
+    <link href="https://fonts.googleapis.com/css2?family=Passion+One&family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <h1>Today's Bonus Puzzle Solution</h1>
-    <div id="puzzle-data">
-        <p>Date: <span id="date"></span></p>
-        <p>Solution: <span id="solution"></span></p>
+    <div class="container">
+        <header>
+            <img src="wof-logo.png" alt="Wheel of Fortune" class="logo">
+            <h1>Daily Bonus Puzzle Solution</h1>
+        </header>
+
+        <div class="puzzle-board">
+            <div class="puzzle-display" id="puzzle-display"></div>
+        </div>
+
+        <div class="info-panel">
+            <div class="info-box">
+                <span class="info-label">Date:</span>
+                <span class="info-value" id="date"></span>
+            </div>
+            <div class="info-box">
+                <span class="info-label">Solution:</span>
+                <span class="info-value" id="solution"></span>
+            </div>
+        </div>
     </div>
-    <script src="update.js?v=1.1"></script>
+
+    <script src="update.js?v=2.0"></script>
 </body>
 </html>
