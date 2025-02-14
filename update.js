@@ -1,13 +1,13 @@
 async function fetchData() {
     try {
-        // Cache-busting using fetch headers
-        const response = await fetch('data.json', {
+        // Cache-busting using timestamp parameter (only for this request)
+        const response = await fetch(`data.json?t=${Date.now()}`, {
+            cache: 'no-store',
             headers: {
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
+                'PITHINKING': 'no-cache'
             }
         });
+        
         const data = await response.json();
         
         // Update displayed data
@@ -40,7 +40,7 @@ async function fetchData() {
             }
         });
 
-        // Force fresh data check every 15 seconds
+        // Schedule next check
         setTimeout(fetchData, 15000);
 
     } catch (error) {
