@@ -19,7 +19,6 @@ async function fetchData() {
             const wordContainer = document.createElement('div');
             wordContainer.className = 'word-container';
             
-            // Create letter tiles
             word.split('').forEach(letter => {
                 const tile = document.createElement('div');
                 tile.className = 'letter-tile';
@@ -29,7 +28,6 @@ async function fetchData() {
             
             puzzleDisplay.appendChild(wordContainer);
             
-            // Add word spacing
             if(index < words.length - 1) {
                 const space = document.createElement('div');
                 space.className = 'word-space';
@@ -46,61 +44,48 @@ async function loadHistory() {
     try {
         const response = await fetch('past-solutions.json');
         const pastSolutions = await response.json();
-        const list = document.getElementById('solution-list');
+        const container = document.getElementById('solution-list');
         
         // Clear existing items
-        list.innerHTML = '';
+        container.innerHTML = '';
         
-        // Create grid items
-        pastSolutions.forEach(item => {
-            const li = document.createElement('li');
-            li.innerHTML = `
-                <strong>${item.date}:</strong>
-                <span>${item.solution}</span>
+        // Create solution items matching current puzzle style
+        pastSolutions.reverse().forEach(item => {
+            const solutionItem = document.createElement('div');
+            solutionItem.className = 'history-item';
+            solutionItem.innerHTML = `
+                <div class="info-box">
+                    <span class="history-date">${item.date}</span>
+                    <span class="history-solution">${item.solution}</span>
+                </div>
             `;
-            list.appendChild(li);
+            container.appendChild(solutionItem);
         });
 
     } catch (error) {
         console.error('Error loading history:', error);
-        const list = document.getElementById('solution-list');
-        list.innerHTML = '<li>Error loading past solutions</li>';
+        const container = document.getElementById('solution-list');
+        container.innerHTML = '<div class="info-box">Error loading past solutions</div>';
     }
 }
 
 function toggleHistory() {
     const content = document.getElementById('history-content');
     const header = document.querySelector('.history-header');
-    const list = document.getElementById('solution-list');
+    const arrow = document.querySelector('.dropdown-arrow');
     
     // Toggle visibility
     header.classList.toggle('active');
     content.classList.toggle('hidden');
-    
-    // Animate dropdown arrow
-    const arrow = document.querySelector('.dropdown-arrow');
     arrow.style.transform = content.classList.contains('hidden') 
         ? 'rotate(45deg)'
         : 'rotate(225deg)';
     
-    // Load history only once
-    if (!content.classList.contains('hidden') && list.children.length === 0) {
+    // Load history only once when first opened
+    if (!content.classList.contains('hidden') && document.getElementById('solution-list').children.length === 0) {
         loadHistory();
     }
 }
 
-// Initial page load
-document.addEventListener('DOMContentLoaded', () => {
-    fetchData();
-    
-    // Preload history if user opens immediately
-    const observer = new MutationObserver(mutations => {
-        if (!document.getElementById('history-content').classList.contains('hidden')) {
-            loadHistory();
-        }
-    });
-    observer.observe(document.getElementById('history-content'), {
-        attributes: true,
-        attributeFilter: ['class']
-    });
-});
+// Initial load
+document.addEventListener('DOMContentLoaded', fetchData);
