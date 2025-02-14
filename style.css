@@ -1,11 +1,128 @@
+:root {
+    --primary-red: #c00;
+    --gold: #ffd700;
+    --dark-blue: #000080;
+    --light-blue: #0066cc;
+}
+
 body {
-    font-family: Arial, sans-serif;
-    max-width: 800px;
-    margin: 20px auto;
+    margin: 0;
+    background: linear-gradient(45deg, #1a1a1a, #2a2a2a);
+    font-family: 'Roboto Condensed', sans-serif;
+    color: white;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
     padding: 20px;
 }
-#solution {
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.logo {
+    width: 400px;
+    margin: 20px 0;
+}
+
+h1 {
+    color: var(--gold);
+    font-family: 'Passion One', cursive;
+    font-size: 2.5em;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin: 10px 0;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.puzzle-board {
+    background: var(--dark-blue);
+    border: 8px solid var(--gold);
+    border-radius: 15px;
+    padding: 30px;
+    margin: 20px auto;
+    position: relative;
+    box-shadow: 0 0 30px rgba(0,0,0,0.5);
+}
+
+.puzzle-display {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+    gap: 10px;
+    background: #000080;
+    padding: 20px;
+    border-radius: 10px;
+    min-height: 100px;
+    align-items: center;
+    justify-content: center;
+}
+
+.letter-tile {
+    background: var(--light-blue);
+    border: 2px solid var(--gold);
+    border-radius: 5px;
+    color: white;
+    font-size: 2em;
     font-weight: bold;
-    color: #2c5f2d;
+    text-align: center;
+    padding: 15px;
+    text-transform: uppercase;
+    animation: flipIn 0.6s ease-out;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+.info-panel {
+    background: rgba(0,0,0,0.7);
+    border-radius: 10px;
+    padding: 20px;
+    margin: 30px auto;
+    max-width: 600px;
+}
+
+.info-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    margin: 10px 0;
+    background: rgba(255,255,255,0.1);
+    border-radius: 5px;
+}
+
+.info-label {
+    color: var(--gold);
+    font-weight: bold;
     font-size: 1.2em;
+}
+
+.info-value {
+    color: white;
+    font-size: 1.4em;
+    font-weight: bold;
+}
+
+@keyframes flipIn {
+    from {
+        transform: rotateX(90deg);
+        opacity: 0;
+    }
+    to {
+        transform: rotateX(0);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 600px) {
+    .logo {
+        width: 250px;
+    }
+    
+    .letter-tile {
+        font-size: 1.5em;
+        padding: 10px;
+    }
 }
