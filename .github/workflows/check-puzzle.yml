@@ -26,9 +26,12 @@ jobs:
       run: pip install requests pytz
 
     - name: Fetch puzzle data
-      run: python fetch_puzzle.py || echo "Continuing despite non-critical error"
       env:
         TZ: America/New_York
+        GITHUB_EVENT_NAME: ${{ github.event_name }}  # Critical for manual triggers
+      run: |
+        python fetch_puzzle.py || echo "Non-critical exit"
+        echo "Exit code: $?"
 
     - name: Check for changes
       id: changes
