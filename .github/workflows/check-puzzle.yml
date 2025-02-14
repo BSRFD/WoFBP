@@ -12,11 +12,14 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      
+    
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.x'
+        
+    - name: Install dependencies  # Add this new step
+      run: pip install requests
         
     - name: Fetch puzzle data
       run: |
