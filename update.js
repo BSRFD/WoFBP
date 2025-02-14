@@ -12,14 +12,30 @@ async function fetchData() {
         const puzzleDisplay = document.getElementById('puzzle-display');
         puzzleDisplay.innerHTML = '';
         
-        // Split solution into characters (ignore spaces)
-        const letters = data.solution.replace(/ /g, '').split('');
+        // Split solution into words and letters
+        const words = data.solution.split(' ');
         
-        letters.forEach(letter => {
-            const tile = document.createElement('div');
-            tile.className = 'letter-tile';
-            tile.textContent = letter;
-            puzzleDisplay.appendChild(tile);
+        words.forEach((word, wordIndex) => {
+            const wordContainer = document.createElement('div');
+            wordContainer.className = 'word-container';
+            
+            // Add letters for this word
+            const letters = word.split('');
+            letters.forEach(letter => {
+                const tile = document.createElement('div');
+                tile.className = 'letter-tile';
+                tile.textContent = letter;
+                wordContainer.appendChild(tile);
+            });
+            
+            puzzleDisplay.appendChild(wordContainer);
+            
+            // Add word spacing (except after last word)
+            if(wordIndex < words.length - 1) {
+                const wordSpace = document.createElement('div');
+                wordSpace.className = 'word-space';
+                puzzleDisplay.appendChild(wordSpace);
+            }
         });
 
         // Force refresh if solution exists
@@ -31,5 +47,3 @@ async function fetchData() {
         console.error('Error fetching data:', error);
     }
 }
-
-fetchData();
