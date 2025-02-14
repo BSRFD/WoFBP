@@ -3,6 +3,7 @@ import json
 import sys
 import datetime
 import pytz
+import os
 
 API_URL = "https://www.wheeloffortune.com/api/bonus-puzzle-data"
 
@@ -16,17 +17,26 @@ def parse_api_date(api_date_str):
     except:
         return None
 
-def main():
-    try:
-        # First check if we should even run
-        eastern = pytz.timezone('America/New_York')
-        now = datetime.datetime.now(eastern)
+def should_run(manual_trigger: bool):
+    if manual_trigger:
+        print("Bypassing time check for manual trigger")
+        return True
         
-        # Only run Mon-Fri between 4:50 PM and 5:20 PM ET
-        if now.weekday() >= 5 or not (datetime.time(16, 50) <= now.time() <= datetime.time(17, 20)):
-            print("Outside monitoring window")
-            sys.exit(0)
+    eastern = pytz.timezone('America/New_York')
+    now = datetime.datetime.now(eastern)
+    return (
+        now.weekday() < 5 and  # 0-4 = Mon-Fri
+        datetime.time(16, 59) <= now.time() <= datetime.time(17, 3)
+    )
 
+def main():
+    manual_trigger = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    
+    if not should_run(manual_trigger):
+        print("Outside scheduled monitoring window")
+        sys.exit(0)
+
+    try:
         # Load existing data
         try:
             with open('data.json', 'r') as f:
@@ -35,6 +45,7 @@ def main():
             existing_data = {"date": "", "solution": ""}
 
         # Fetch API data
+        print(f"Fetching API data from {API_URL}")
         response = requests.get(API_URL, timeout=10)
         response.raise_for_status()
         api_data = response.json()
@@ -47,7 +58,7 @@ def main():
                 break
 
         if not puzzle_data:
-            print("Puzzle data not found in API response")
+            print("Error: Bonus puzzle component not found")
             sys.exit(1)
 
         # Process solution and date
@@ -59,18 +70,19 @@ def main():
         ).upper()
         api_date_str = puzzle_data.get('date', '')
         api_date = parse_api_date(api_date_str)
-        
-        # Get today's Eastern Time date
         today_date = get_eastern_date()
+
+        print(f"API Date: {api_date_str} | Today's Date: {today_date}")
+        print(f"Existing Solution Date: {existing_data.get('date')}")
 
         # Only update if API date matches today
         if api_date != today_date:
-            print(f"API date {api_date_str} not today's date")
-            sys.exit(0)  # Not an error, just not updated yet
+            print("API date not today - skipping update")
+            sys.exit(0)
 
         if api_date_str == existing_data.get('date'):
-            print("Already have today's solution")
-            sys.exit(0)  # Success exit code
+            print("Already has today's solution")
+            sys.exit(0)
 
         # Update data.json
         with open('data.json', 'w') as f:
@@ -79,9 +91,12 @@ def main():
                 "solution": solution
             }, f)
 
-        print(f"Updated {api_date_str}: {solution}")
+        print(f"Successfully updated to {api_date_str}: {solution}")
         sys.exit(0)
 
     except Exception as e:
-        print(f"Error: {str(e)}")
+        print(f"ERROR: {str(e)}")
         sys.exit(1)
+
+if __name__ == "__main__":
+    main()
