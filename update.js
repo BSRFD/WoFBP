@@ -1,6 +1,6 @@
 async function fetchData() {
     try {
-        // Cache-busting with random parameter (only on initial load/refresh)
+        // Single cache-busted request
         const cacheBuster = `?rand=${Math.random().toString(36).substr(2, 9)}`;
         const response = await fetch(`data.json${cacheBuster}`, {
             headers: {
