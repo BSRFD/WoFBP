@@ -4,24 +4,38 @@ import sys
 
 API_URL = "https://www.wheeloffortune.com/api/bonus-puzzle-data"
 
+def find_bonus_puzzle_component(data):
+    """Find the bonus puzzle component in the API response"""
+    if 'components' not in data:
+        return None
+    for component in data.get('components', []):
+        if component.get('componentName') == 'bonusPuzzle':
+            return component.get('data', {})
+    return None
+
 def main():
     try:
-        print(f"Attempting to fetch data from {API_URL}")
-        response = requests.get(API_URL, timeout=10, headers={'User-Agent': 'Mozilla/5.0'})
-        print(f"Response status code: {response.status_code}")
-        print(f"Response content: {response.text[:200]}")  # Show first 200 characters
-        
-        new_data = response.json()
-        print(f"Parsed JSON: {new_data}")
+        # Fetch API data
+        response = requests.get(API_URL, timeout=10)
+        response.raise_for_status()
+        api_data = response.json()
 
-        # Validate API response
-        if not isinstance(new_data, dict) or 'solution' not in new_data:
-            print("Invalid API response format", file=sys.stderr)
+        # Find puzzle component
+        puzzle_data = find_bonus_puzzle_component(api_data)
+        if not puzzle_data:
+            print("Error: Bonus puzzle data not found in API response", file=sys.stderr)
             return False
 
-        # Handle null/None solution
-        raw_solution = new_data.get('solution') or ''
-        solution = raw_solution.upper() if raw_solution else ''
+        # Extract and clean solution
+        raw_solution = puzzle_data.get('solution', '')
+        solution = ' '.join(
+            part.strip() 
+            for part in raw_solution.split('/') 
+            if part.strip()
+        ).upper()
+
+        # Get date
+        date = puzzle_data.get('date', 'Unknown date')
 
         # Load existing data
         try:
@@ -31,23 +45,27 @@ def main():
             existing_data = {"date": "", "solution": ""}
 
         # Check for changes
-        if (new_data.get('date') != existing_data.get('date') or
-            solution != existing_data.get('solution')):
-
+        if date != existing_data.get('date') or solution != existing_data.get('solution'):
             with open('data.json', 'w') as f:
                 json.dump({
-                    "date": new_data.get('date', ''),
+                    "date": date,
                     "solution": solution
                 }, f)
             
-            print("Data updated successfully")
+            print(f"Updated: {date} - {solution}")
             return True
 
         print("No changes detected")
         return False
 
+    except requests.exceptions.RequestException as e:
+        print(f"Network error: {str(e)}", file=sys.stderr)
+        return False
+    except json.JSONDecodeError as e:
+        print(f"JSON parsing error: {str(e)}", file=sys.stderr)
+        return False
     except Exception as e:
-        print(f"Error: {str(e)}", file=sys.stderr)
+        print(f"Unexpected error: {str(e)}", file=sys.stderr)
         return False
 
 if __name__ == "__main__":
