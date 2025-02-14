@@ -2,9 +2,8 @@ name: Check Puzzle Solution
 on:
   workflow_dispatch:
   schedule:
-    # Checks every minute from 4:59 PM to 5:03 PM ET (Monday-Friday)
-    - cron: '59 20 * * 1-5'  # 4:59 PM ET (20:59 UTC)
-    - cron: '0-3 21 * * 1-5'  # 5:00-5:03 PM ET (21:00-21:03 UTC)
+    - cron: '59 20 * * 1-5'    # 4:59 PM ET
+    - cron: '0-3 21 * * 1-5'   # 5:00-5:03 PM ET
 
 jobs:
   check-solution:
