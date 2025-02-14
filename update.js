@@ -4,24 +4,24 @@ async function fetchData() {
         const response = await fetch(`data.json?t=${timestamp}`);
         const data = await response.json();
         
-        // Update date and solution
+        // Update text fields
         document.getElementById('date').textContent = data.date;
         document.getElementById('solution').textContent = data.solution;
 
-        // Create puzzle display
+        // Build puzzle display
         const puzzleDisplay = document.getElementById('puzzle-display');
         puzzleDisplay.innerHTML = '';
         
-        // Split solution into words and letters
-        const words = data.solution.split(' ');
+        // Split into words using any whitespace
+        const words = data.solution.split(/\s+/);
         
-        words.forEach((word, wordIndex) => {
+        words.forEach((word, index) => {
+            // Create word container
             const wordContainer = document.createElement('div');
             wordContainer.className = 'word-container';
             
-            // Add letters for this word
-            const letters = word.split('');
-            letters.forEach(letter => {
+            // Add letter tiles
+            word.split('').forEach(letter => {
                 const tile = document.createElement('div');
                 tile.className = 'letter-tile';
                 tile.textContent = letter;
@@ -30,15 +30,15 @@ async function fetchData() {
             
             puzzleDisplay.appendChild(wordContainer);
             
-            // Add word spacing (except after last word)
-            if(wordIndex < words.length - 1) {
-                const wordSpace = document.createElement('div');
-                wordSpace.className = 'word-space';
-                puzzleDisplay.appendChild(wordSpace);
+            // Add word space separator
+            if(index < words.length - 1) {
+                const space = document.createElement('div');
+                space.className = 'word-space';
+                puzzleDisplay.appendChild(space);
             }
         });
 
-        // Force refresh if solution exists
+        // Force refresh if new solution detected
         if(data.solution !== 'Check back later' && 
            !window.location.search.includes('refreshed')) {
             window.location.search = `?refreshed=${timestamp}`;
@@ -47,3 +47,6 @@ async function fetchData() {
         console.error('Error fetching data:', error);
     }
 }
+
+// Initial load
+fetchData();
