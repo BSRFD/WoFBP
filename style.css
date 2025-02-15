@@ -92,22 +92,6 @@ h1 {
     height: 60px;
 }
 
-@media (max-width: 600px) {
-    .puzzle-board {
-        max-width: 95%;
-        padding: 10px;
-    }
-    
-    .letter-tile {
-        min-width: 30px;
-        font-size: 1.5em;
-        padding: 8px;
-    }
-    
-    .word-space {
-        width: 15px;
-    }
-}
 .info-panel {
     background: rgba(0,0,0,0.7);
     border-radius: 10px;
@@ -150,8 +134,9 @@ h1 {
     padding: 15px 25px;
     cursor: pointer;
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
+    position: relative;
     transition: all 0.3s ease;
 }
 
@@ -164,6 +149,7 @@ h1 {
     font-family: 'Passion One', cursive;
     font-size: 1.4em;
     letter-spacing: 1px;
+    text-align: center;
 }
 
 .dropdown-arrow {
@@ -173,6 +159,8 @@ h1 {
     border-bottom: 3px solid var(--gold);
     transform: rotate(45deg);
     transition: transform 0.3s ease;
+    position: absolute;
+    right: 20px;
 }
 
 #history-content {
@@ -230,14 +218,30 @@ h1 {
         width: 250px;
     }
     
-    .letter-tile {
-        font-size: 1.5em;
+    .puzzle-board {
+        max-width: 95%;
         padding: 10px;
+    }
+    
+    .letter-tile {
         min-width: 30px;
+        font-size: 1.5em;
+        padding: 8px;
     }
     
     .word-space {
-        width: 30px;
+        width: 15px;
+    }
+    
+    .history-header span {
+        font-size: 1.2em;
+        padding-right: 30px;
+    }
+    
+    .dropdown-arrow {
+        right: 10px;
+        width: 16px;
+        height: 16px;
     }
     
     .history-date,
