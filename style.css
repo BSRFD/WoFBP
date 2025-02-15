@@ -3,8 +3,6 @@
     --gold: #ffd700;
     --dark-blue: #000080;
     --light-blue: #0066cc;
-    --vowel-pink: #ff69b4;
-    --wildcard-red: #ff4444;
 }
 
 body {
@@ -42,36 +40,27 @@ h1 {
 }
 
 .puzzle-board {
-    background: linear-gradient(145deg, #00004d, #000080);
+    background: var(--dark-blue);
     border: 8px solid var(--gold);
     border-radius: 15px;
-    padding: 20px;
+    padding: 30px;
     margin: 20px auto;
-    width: 90%;
-    max-width: 800px;
-    min-width: 300px;
-    overflow-x: auto;
+    position: relative;
     box-shadow: 0 0 30px rgba(0,0,0,0.5);
-    box-sizing: border-box;
-    perspective: 1000px;
 }
 
 .puzzle-display {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 15px;
     justify-content: center;
-    padding: 10px;
+    padding: 20px;
     min-height: 120px;
-    width: 100%;
-    box-sizing: border-box;
 }
 
 .word-container {
     display: flex;
-    gap: 5px;
-    flex-wrap: wrap;
-    justify-content: center;
+    gap: 8px;
 }
 
 .letter-tile {
@@ -79,70 +68,20 @@ h1 {
     border: 2px solid var(--gold);
     border-radius: 5px;
     color: white;
-    font-size: 1.8em;
+    font-size: 2em;
     font-weight: bold;
     text-align: center;
-    padding: 10px;
-    min-width: 35px;
-    box-sizing: border-box;
+    padding: 15px;
     text-transform: uppercase;
-    animation: letterReveal 0.6s ease-out forwards;
-    transform-style: preserve-3d;
-    transform-origin: center bottom;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    opacity: 0;
+    animation: flipIn 0.6s ease-out;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    min-width: 40px;
 }
-
-.vowel-tile {
-    animation-name: vowelReveal;
-}
-
-.wildcard-tile {
-    background: var(--wildcard-red) !important;
-    animation-delay: 0.3s !important;
-}
-
 .word-space {
-    width: 20px;
+    width: 30px;
     height: 60px;
+    position: relative;
 }
-
-@keyframes letterReveal {
-    0% {
-        transform: rotateX(90deg) scale(0.8);
-        opacity: 0;
-        background: var(--dark-blue);
-    }
-    50% {
-        transform: rotateX(0deg) scale(1.1);
-        background: var(--gold);
-        color: var(--dark-blue);
-    }
-    100% {
-        transform: scale(1);
-        background: var(--light-blue);
-        opacity: 1;
-    }
-}
-
-@keyframes vowelReveal {
-    0% {
-        transform: rotateX(90deg) scale(0.8);
-        opacity: 0;
-        background: var(--dark-blue);
-    }
-    50% {
-        transform: rotateX(0deg) scale(1.1);
-        background: var(--vowel-pink);
-        color: white;
-    }
-    100% {
-        transform: scale(1);
-        background: var(--light-blue);
-        opacity: 1;
-    }
-}
-
 .info-panel {
     background: rgba(0,0,0,0.7);
     border-radius: 10px;
@@ -185,9 +124,8 @@ h1 {
     padding: 15px 25px;
     cursor: pointer;
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
     align-items: center;
-    position: relative;
     transition: all 0.3s ease;
 }
 
@@ -200,7 +138,6 @@ h1 {
     font-family: 'Passion One', cursive;
     font-size: 1.4em;
     letter-spacing: 1px;
-    text-align: center;
 }
 
 .dropdown-arrow {
@@ -210,8 +147,6 @@ h1 {
     border-bottom: 3px solid var(--gold);
     transform: rotate(45deg);
     transition: transform 0.3s ease;
-    position: absolute;
-    right: 20px;
 }
 
 #history-content {
@@ -253,35 +188,30 @@ h1 {
     text-align: right;
 }
 
+@keyframes flipIn {
+    from {
+        transform: rotateX(90deg);
+        opacity: 0;
+    }
+    to {
+        transform: rotateX(0);
+        opacity: 1;
+    }
+}
+
 @media (max-width: 600px) {
     .logo {
         width: 250px;
     }
     
-    .puzzle-board {
-        max-width: 95%;
-        padding: 10px;
-    }
-    
     .letter-tile {
-        min-width: 30px;
         font-size: 1.5em;
-        padding: 8px;
+        padding: 10px;
+        min-width: 30px;
     }
     
     .word-space {
-        width: 15px;
-    }
-    
-    .history-header span {
-        font-size: 1.2em;
-        padding-right: 30px;
-    }
-    
-    .dropdown-arrow {
-        right: 10px;
-        width: 16px;
-        height: 16px;
+        width: 30px;
     }
     
     .history-date,
