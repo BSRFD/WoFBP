@@ -2,7 +2,8 @@ let historyLoaded = false;
 
 async function fetchData() {
     try {
-        const response = await fetch(`data.json?rand=${Date.now()}`);
+        const cacheBuster = `?rand=${Math.random().toString(36).substr(2, 9)}`;
+        const response = await fetch(`data.json${cacheBuster}`);
         const data = await response.json();
         
         document.getElementById('date').textContent = data.date;
@@ -13,27 +14,25 @@ async function fetchData() {
         
         const words = data.solution.split(/\s+/);
         
-        // Create each letter with delay
-        for (const word of words) {
+        words.forEach((word, index) => {
             const wordContainer = document.createElement('div');
             wordContainer.className = 'word-container';
             
-            for (const letter of word.toUpperCase()) {
-                await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay per letter
+            word.split('').forEach(letter => {
                 const tile = document.createElement('div');
                 tile.className = 'letter-tile';
                 tile.textContent = letter;
                 wordContainer.appendChild(tile);
-            }
+            });
             
             puzzleDisplay.appendChild(wordContainer);
             
-            if (words.indexOf(word) < words.length - 1) {
+            if(index < words.length - 1) {
                 const space = document.createElement('div');
                 space.className = 'word-space';
                 puzzleDisplay.appendChild(space);
             }
-        }
+        });
 
     } catch (error) {
         console.error('Error:', error);
