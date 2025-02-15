@@ -77,25 +77,11 @@ h1 {
     box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     min-width: 40px;
 }
-
 .word-space {
-    width: 40px;
+    width: 30px;
     height: 60px;
     position: relative;
 }
-
-.word-space::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    width: 6px;
-    height: 6px;
-    background: var(--gold);
-    border-radius: 50%;
-}
-
 .info-panel {
     background: rgba(0,0,0,0.7);
     border-radius: 10px;
