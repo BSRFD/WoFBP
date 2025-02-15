@@ -3,6 +3,8 @@
     --gold: #ffd700;
     --dark-blue: #000080;
     --light-blue: #0066cc;
+    --vowel-pink: #ff69b4;
+    --wildcard-red: #ff4444;
 }
 
 body {
@@ -40,7 +42,7 @@ h1 {
 }
 
 .puzzle-board {
-    background: var(--dark-blue);
+    background: linear-gradient(145deg, #00004d, #000080);
     border: 8px solid var(--gold);
     border-radius: 15px;
     padding: 20px;
@@ -51,6 +53,7 @@ h1 {
     overflow-x: auto;
     box-shadow: 0 0 30px rgba(0,0,0,0.5);
     box-sizing: border-box;
+    perspective: 1000px;
 }
 
 .puzzle-display {
@@ -83,13 +86,61 @@ h1 {
     min-width: 35px;
     box-sizing: border-box;
     text-transform: uppercase;
-    animation: flipIn 0.6s ease-out;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    animation: letterReveal 0.6s ease-out forwards;
+    transform-style: preserve-3d;
+    transform-origin: center bottom;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    opacity: 0;
+}
+
+.vowel-tile {
+    animation-name: vowelReveal;
+}
+
+.wildcard-tile {
+    background: var(--wildcard-red) !important;
+    animation-delay: 0.3s !important;
 }
 
 .word-space {
     width: 20px;
     height: 60px;
+}
+
+@keyframes letterReveal {
+    0% {
+        transform: rotateX(90deg) scale(0.8);
+        opacity: 0;
+        background: var(--dark-blue);
+    }
+    50% {
+        transform: rotateX(0deg) scale(1.1);
+        background: var(--gold);
+        color: var(--dark-blue);
+    }
+    100% {
+        transform: scale(1);
+        background: var(--light-blue);
+        opacity: 1;
+    }
+}
+
+@keyframes vowelReveal {
+    0% {
+        transform: rotateX(90deg) scale(0.8);
+        opacity: 0;
+        background: var(--dark-blue);
+    }
+    50% {
+        transform: rotateX(0deg) scale(1.1);
+        background: var(--vowel-pink);
+        color: white;
+    }
+    100% {
+        transform: scale(1);
+        background: var(--light-blue);
+        opacity: 1;
+    }
 }
 
 .info-panel {
@@ -200,17 +251,6 @@ h1 {
     font-weight: bold;
     width: 55%;
     text-align: right;
-}
-
-@keyframes flipIn {
-    from {
-        transform: rotateX(90deg);
-        opacity: 0;
-    }
-    to {
-        transform: rotateX(0);
-        opacity: 1;
-    }
 }
 
 @media (max-width: 600px) {
