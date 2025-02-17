@@ -2,8 +2,9 @@ name: Check Puzzle Solution
 on:
   workflow_dispatch:
   schedule:
-    - cron: '59 20 * * 1-5'
-    - cron: '0-3 21 * * 1-5'
+    - cron: '50-59 21 * * 1-5'  # 4:50-4:59 PM ET
+    - cron: '0-20 22 * * 1-5'   # 5:00-5:20 PM ET
+  timezone: 'America/New_York'
 
 jobs:
   check-solution:
@@ -16,6 +17,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -29,19 +31,12 @@ jobs:
       env:
         TZ: America/New_York
         GITHUB_EVENT_NAME: ${{ github.event_name }}
-      run: python fetch_puzzle.py || echo "Non-critical exit"
-
-    - name: Check for changes
-      id: changes
-      run: |
-        git status -s
-        echo "changed=$(git status -s | wc -l | xargs)" >> $GITHUB_OUTPUT
+      run: python fetch_puzzle.py
 
     - name: Commit and push changes
-      if: steps.changes.outputs.changed != '0'
       run: |
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
+        git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
         git add data.json past-solutions.json
-        git commit -m "Update puzzle data [skip ci]"
-        git push
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update puzzle data [skip ci]" && git pull --rebase && git push)
