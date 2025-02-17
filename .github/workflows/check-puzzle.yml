@@ -2,9 +2,9 @@ name: Check Puzzle Solution
 on:
   workflow_dispatch:
   schedule:
-    - cron: '50-59 21 * * 1-5'  # 4:50-4:59 PM ET
-    - cron: '0-20 22 * * 1-5'   # 5:00-5:20 PM ET
-  timezone: 'America/New_York'
+    - cron: '0-5 22 * * 1-5'  # 5:00-5:05 PM ET
+    timezone: 'America/New_York'
+
 
 jobs:
   check-solution:
