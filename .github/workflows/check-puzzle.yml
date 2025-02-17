@@ -5,13 +5,12 @@ on:
     - cron: '0-5 22 * * 1-5'  # 5:00-5:05 PM ET
       timezone: 'America/New_York'
 
-
 jobs:
   check-solution:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      
+      contents: write  # Needed to commit changes
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
