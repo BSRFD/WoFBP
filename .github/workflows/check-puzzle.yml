@@ -32,10 +32,15 @@ jobs:
         GITHUB_EVENT_NAME: ${{ github.event_name }}
       run: python fetch_puzzle.py
 
+    - name: Pull latest changes
+      run: |
+        git fetch --all
+        git pull origin ${{ github.ref }}  # Pull changes from the branch currently being used
+
     - name: Commit and push changes
       run: |
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
         git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
         git add data.json past-solutions.json
-        git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update puzzle data [skip ci]" && git pull --rebase && git push)
+        git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update puzzle data [skip ci]" && git push)
