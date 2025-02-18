@@ -2,21 +2,21 @@ name: Check Puzzle Solution
 on:
   workflow_dispatch:
   schedule:
-    - cron: '17 17 * * 1-5'  # 5:17 PM ET (minute 17, hour 17)
-      timezone: 'America/New_York'
+    - cron: '2 17 * * *'  # 5:02 PM ET every day
+      timezone: 'America/New_York'  # Eastern Time
 
 jobs:
   check-solution:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Required for committing/pushing changes
+      contents: write  # Required for git commits/pushes
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        fetch-depth: 0  # Fetch all commit history
+        fetch-depth: 0  # Get full git history
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -28,7 +28,7 @@ jobs:
 
     - name: Fetch puzzle data
       env:
-        TZ: America/New_York  # Explicitly set timezone for the script
+        TZ: America/New_York  # Ensure script uses ET
         GITHUB_EVENT_NAME: ${{ github.event_name }}
       run: python fetch_puzzle.py
 
