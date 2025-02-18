@@ -1,5 +1,41 @@
 let historyLoaded = false;
 
+async function revealPuzzle(solution) {
+    const puzzleDisplay = document.getElementById('puzzle-display');
+    puzzleDisplay.innerHTML = '';
+    
+    const words = solution.split(/\s+/);
+    let delay = 500; // Initial delay before first letter
+    
+    // Create all tiles hidden
+    words.forEach((word, wordIndex) => {
+        const wordContainer = document.createElement('div');
+        wordContainer.className = 'word-container';
+        
+        word.split('').forEach(letter => {
+            const tile = document.createElement('div');
+            tile.className = 'letter-tile';
+            tile.textContent = letter.toUpperCase();
+            wordContainer.appendChild(tile);
+        });
+        
+        puzzleDisplay.appendChild(wordContainer);
+        
+        if(wordIndex < words.length - 1) {
+            const space = document.createElement('div');
+            space.className = 'word-space';
+            puzzleDisplay.appendChild(space);
+        }
+    });
+
+    // Reveal letters one by one
+    const tiles = document.querySelectorAll('.letter-tile');
+    for(const tile of tiles) {
+        await new Promise(resolve => setTimeout(resolve, 200)); // 200ms between letters
+        tile.classList.add('revealed');
+    }
+}
+
 async function fetchData() {
     try {
         const response = await fetch(`data.json?rand=${Date.now()}`);
@@ -8,31 +44,7 @@ async function fetchData() {
         document.getElementById('date').textContent = data.date;
         document.getElementById('solution').textContent = data.solution;
 
-        const puzzleDisplay = document.getElementById('puzzle-display');
-        puzzleDisplay.innerHTML = '';
-        
-        const words = data.solution.split(/\s+/);
-        
-        for (const word of words) {
-            const wordContainer = document.createElement('div');
-            wordContainer.className = 'word-container';
-            
-            for (const letter of word.toUpperCase()) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                const tile = document.createElement('div');
-                tile.className = 'letter-tile';
-                tile.textContent = letter;
-                wordContainer.appendChild(tile);
-            }
-            
-            puzzleDisplay.appendChild(wordContainer);
-            
-            if (words.indexOf(word) < words.length - 1) {
-                const space = document.createElement('div');
-                space.className = 'word-space';
-                puzzleDisplay.appendChild(space);
-            }
-        }
+        await revealPuzzle(data.solution);
 
     } catch (error) {
         console.error('Error:', error);
