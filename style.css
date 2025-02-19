@@ -72,10 +72,10 @@ h1 {
 }
 
 .letter-tile {
-    background: #0066cc;
-    border: 2px solid #ffd700;
+    background: var(--dark-blue);
+    border: 2px solid var(--gold);
     border-radius: 5px;
-    color: white;
+    color: transparent; /* Start with invisible text */
     font-size: 2em;
     font-weight: bold;
     text-align: center;
@@ -88,12 +88,37 @@ h1 {
     justify-content: center;
     margin: 2px;
     box-sizing: border-box;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.letter-tile::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--gold);
     opacity: 0;
-    transition: opacity 0.1s ease-out;
+    transition: opacity 0.3s ease;
 }
 
 .letter-tile.revealed {
-    opacity: 1;
+    color: white; /* Reveal text color */
+    background: var(--light-blue);
+}
+
+.letter-tile.revealed::after {
+    opacity: 0.2;
+    animation: flash 0.5s ease-out;
+}
+
+@keyframes flash {
+    0% { opacity: 0.4; }
+    50% { opacity: 0.2; }
+    100% { opacity: 0; }
 }
 
 .word-space {

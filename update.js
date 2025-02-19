@@ -1,5 +1,13 @@
 let historyLoaded = false;
 
+// Fisher-Yates shuffle algorithm
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
 async function fetchData() {
     try {
         const response = await fetch(`data.json?rand=${Date.now()}`);
@@ -12,9 +20,9 @@ async function fetchData() {
         puzzleDisplay.innerHTML = '';
         
         const words = data.solution.split(/\s+/);
-        let letterCount = 0;
+        const allTiles = [];
 
-        // Create all tiles first (hidden)
+        // Create all tiles first (blank state)
         for (const word of words) {
             const wordContainer = document.createElement('div');
             wordContainer.className = 'word-container';
@@ -24,7 +32,7 @@ async function fetchData() {
                 tile.className = 'letter-tile';
                 tile.textContent = letter;
                 wordContainer.appendChild(tile);
-                letterCount++;
+                allTiles.push(tile);
             }
             
             puzzleDisplay.appendChild(wordContainer);
@@ -36,12 +44,12 @@ async function fetchData() {
             }
         }
 
-        // Reveal tiles sequentially
-        const tiles = document.querySelectorAll('.letter-tile');
-        tiles.forEach((tile, index) => {
+        // Shuffle and reveal tiles randomly
+        shuffleArray(allTiles);
+        allTiles.forEach((tile, index) => {
             setTimeout(() => {
                 tile.classList.add('revealed');
-            }, index * 100); // 100ms between letters
+            }, index * 75); // 75ms between reveals
         });
 
     } catch (error) {
