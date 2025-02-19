@@ -12,17 +12,19 @@ async function fetchData() {
         puzzleDisplay.innerHTML = '';
         
         const words = data.solution.split(/\s+/);
-        
+        let letterCount = 0;
+
+        // Create all tiles first (hidden)
         for (const word of words) {
             const wordContainer = document.createElement('div');
             wordContainer.className = 'word-container';
             
             for (const letter of word.toUpperCase()) {
-                await new Promise(resolve => setTimeout(resolve, 100));
                 const tile = document.createElement('div');
                 tile.className = 'letter-tile';
                 tile.textContent = letter;
                 wordContainer.appendChild(tile);
+                letterCount++;
             }
             
             puzzleDisplay.appendChild(wordContainer);
@@ -34,11 +36,18 @@ async function fetchData() {
             }
         }
 
+        // Reveal tiles sequentially
+        const tiles = document.querySelectorAll('.letter-tile');
+        tiles.forEach((tile, index) => {
+            setTimeout(() => {
+                tile.classList.add('revealed');
+            }, index * 100); // 100ms between letters
+        });
+
     } catch (error) {
         console.error('Error:', error);
     }
 }
-
 
 async function loadHistory() {
     try {
