@@ -83,8 +83,8 @@ def main():
                 "date": existing_data['date'],
                 "solution": existing_data['solution']
             })
-            # Keep last 30 entries
-            past_data = past_data[-30:]
+            # Keep 1 year of entries
+            past_data = past_data[-365:]
             
             with open(past_file, 'w') as f:
                 json.dump(past_data, f)
