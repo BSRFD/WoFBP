@@ -17,25 +17,14 @@ def parse_api_date(api_date_str):
     except:
         return None
 
-def should_run(manual_trigger: bool):
-    if manual_trigger:
-        print("Bypassing time check for manual trigger")
-        return True
-        
-    eastern = pytz.timezone('America/New_York')
-    now = datetime.datetime.now(eastern)
-    return (
-        now.weekday() < 5 and  # 0-4 = Mon-Fri
-        datetime.time(16, 59) <= now.time() <= datetime.time(17, 3)
-    )
-
 def main():
+    # Check if it's a manual trigger
     manual_trigger = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
     
-    if not should_run(manual_trigger):
-        print("Outside scheduled monitoring window")
-        sys.exit(0)
-
+    # If manual trigger, skip any checks and run
+    if manual_trigger:
+        print("Bypassing time check for manual trigger")
+    
     try:
         # Load existing data
         try:
