@@ -2,7 +2,8 @@ name: Check Puzzle Solution
 on:
   workflow_dispatch:
   schedule:
-    - cron: '2 22 * * *'  # 5:02 PM ET every day (Winter) - Change to 21 during the summer
+    - cron: '2 22 * * *'  # 5:02 PM ET (EST, UTC-5) during Standard Time
+    - cron: '2 21 * * *'  # 5:02 PM ET (EDT, UTC-4) during Daylight Saving Time
 jobs:
   check-solution:
     runs-on: ubuntu-latest
