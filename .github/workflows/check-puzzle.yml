@@ -2,8 +2,8 @@ name: Check Puzzle Solution
 on:
   workflow_dispatch:
   schedule:
-    - cron: '2 22 * * *'  # 5:02 PM ET (EST, UTC-5) during Standard Time
-    - cron: '2 21 * * *'  # 5:02 PM ET (EDT, UTC-4) during Daylight Saving Time
+    - cron: '45 21 * * *'  # 4:45 PM ET (EST, UTC-5) during Standard Time
+    - cron: '45 20 * * *'  # 4:45 PM ET (EDT, UTC-4) during Daylight Saving Time
 jobs:
   check-solution:
     runs-on: ubuntu-latest
@@ -25,11 +25,22 @@ jobs:
     - name: Install dependencies
       run: pip install requests pytz
 
-    - name: Fetch puzzle data
+    - name: Fetch puzzle data with retry
       env:
         TZ: America/New_York  # Ensure script uses ET
         GITHUB_EVENT_NAME: ${{ github.event_name }}
-      run: python fetch_puzzle.py
+      run: |
+        for attempt in {1..20}; do
+          python fetch_puzzle.py
+          if [ $? -eq 0 ]; then
+            echo "✅ Data found on attempt $attempt"
+            exit 0
+          fi
+          echo "⏳ No data available (attempt $attempt/20). Retrying in 60 seconds..."
+          sleep 60
+        done
+        echo "❌ No data found after 20 attempts"
+        exit 1
 
     - name: Pull latest changes
       run: |
