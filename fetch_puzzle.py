@@ -18,10 +18,7 @@ def parse_api_date(api_date_str):
         return None
 
 def main():
-    # Check if it's a manual trigger
     manual_trigger = os.getenv("GITHUB_EVENT_NAME") == "workflow_dispatch"
-    
-    # If manual trigger, skip any checks and run
     if manual_trigger:
         print("Bypassing time check for manual trigger")
     
@@ -60,16 +57,21 @@ def main():
         api_date = parse_api_date(api_date_str)
         today_date = get_eastern_date()
 
-        # Validate API date
-        if api_date != today_date:
-            print(f"API date {api_date_str} not today's date")
-            sys.exit(0)
+        # Only validate dates for automated runs
+        if not manual_trigger:
+            if not api_date:
+                print(f"Invalid API date format: {api_date_str}")
+                sys.exit(1)
+                
+            if api_date != today_date:
+                print(f"API date {api_date_str} not today's date")
+                sys.exit(1)  # Non-zero for retry
 
         if api_date_str == existing_data.get('date'):
             print("Already has today's solution")
             sys.exit(0)
 
-        # Archive previous solution if valid
+        # Archive previous solution
         if existing_data['date'] not in ["No data yet", ""]:
             past_file = 'past-solutions.json'
             past_data = []
@@ -78,12 +80,10 @@ def main():
                 with open(past_file, 'r') as f:
                     past_data = json.load(f)
             
-            # Add previous solution to history
             past_data.append({
                 "date": existing_data['date'],
                 "solution": existing_data['solution']
             })
-            # Keep 1 year of entries
             past_data = past_data[-365:]
             
             with open(past_file, 'w') as f:
