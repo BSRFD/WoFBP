@@ -1,8 +1,8 @@
-name: Daily Puzzle Check
+name: Puzzle Check with Manual Override
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # Manual trigger (any day)
   schedule:
-    - cron: '45 20 * * 1-5'  # 4:45 PM EDT (20:45 UTC) Mon-Fri
+    - cron: '45 20 * * 1-5'  # Auto 4:45 PM EDT Mon-Fri only
 
 jobs:
   puzzle-check:
@@ -30,46 +30,37 @@ jobs:
         git config --global user.email "actions@github.com"
         git pull --ff-only
 
-    - name: Check for new solution (with retries)
+    - name: Check for updates
       env:
         TZ: America/New_York
       run: |
         for attempt in {1..20}; do
-          echo "Attempt $attempt/20"
-          
-          # Run check and capture exit code
-          python fetch_puzzle.py
+          output=$(python fetch_puzzle.py 2>&1)
           exit_code=$?
           
-          # Exit code meanings:
-          # 0 - New solution found and processed
-          # 1 - Same solution, continue retrying
-          # 2 - Fatal error, abort immediately
+          if [ $exit_code -eq 0 ]; then
+            echo "✅ New solution found"
+            echo "$output"
+            exit 0
+          fi
           
-          case $exit_code in
-              0)
-                echo "🆕 New solution found - stopping retries"
-                exit 0
-                ;;
-              1)
-                if [ $attempt -lt 20 ]; then
-                  echo "⏳ Same solution - retrying in 60 seconds..."
-                  sleep 60
-                else
-                  echo "🔁 Reached max retries - no new solution"
-                  exit 0
-                fi
-                ;;
-              *)
-                echo "❌ Fatal error detected - exiting workflow"
-                exit $exit_code
-                ;;
-          esac
+          if [ $exit_code -eq 2 ]; then
+            echo "❌ Critical failure:"
+            echo "$output"
+            exit 1
+          fi
+
+          if [ $attempt -eq 20 ]; then
+            echo "⚠️ No update after 20 attempts"
+            echo "Last check: $(date '+%H:%M:%S')"
+          fi
+          
+          sleep 60
         done
 
-    - name: Commit and push changes
+    - name: Commit and push
       if: success()
       run: |
         git add data.json past-solutions.json
         git diff --quiet && git diff --staged --quiet || \
-          (git commit -m "Auto-update puzzle solution [skip ci]" && git push)
+          (git commit -m "Auto-update solution [skip ci]" && git push)
