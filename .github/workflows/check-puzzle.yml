@@ -1,21 +1,20 @@
-name: Check Puzzle Solution
+name: Daily Puzzle Check
 on:
   workflow_dispatch:
   schedule:
-    - cron: '45 21 * * *'  # 4:45 PM ET (EST, UTC-5) during Standard Time
-    - cron: '45 20 * * *'  # 4:45 PM ET (EDT, UTC-4) during Daylight Saving Time
+    - cron: '45 20 * * 1-5'  # 4:45 PM EDT (20:45 UTC) Mon-Fri
+
 jobs:
-  check-solution:
+  puzzle-check:
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # Required for git commits/pushes
+      contents: write
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        fetch-depth: 0  # Get full git history
+        fetch-depth: 0
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -25,31 +24,52 @@ jobs:
     - name: Install dependencies
       run: pip install requests pytz
 
-    - name: Fetch puzzle data with retry
-      env:
-        TZ: America/New_York  # Ensure script uses ET
-        GITHUB_EVENT_NAME: ${{ github.event_name }}
-      run: |
-        for attempt in {1..20}; do
-          python fetch_puzzle.py
-          if [ $? -eq 0 ]; then
-            echo "✅ Data found on attempt $attempt"
-            exit 0
-          fi
-          echo "⏳ No data available (attempt $attempt/20). Retrying in 60 seconds..."
-          sleep 60
-        done
-        echo "❌ No data found after 20 attempts"
-        exit 1
-
     - name: Pull latest changes
       run: |
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
-        git fetch --all
-        git pull origin ${{ github.ref }}
+        git pull --ff-only
+
+    - name: Check for new solution (with retries)
+      env:
+        TZ: America/New_York
+      run: |
+        for attempt in {1..20}; do
+          echo "Attempt $attempt/20"
+          
+          # Run check and capture exit code
+          python check_puzzle.py
+          exit_code=$?
+          
+          # Exit code meanings:
+          # 0 - New solution found and processed
+          # 1 - Same solution, continue retrying
+          # 2 - Fatal error, abort immediately
+          
+          case $exit_code in
+              0)
+                echo "🆕 New solution found - stopping retries"
+                exit 0
+                ;;
+              1)
+                if [ $attempt -lt 20 ]; then
+                  echo "⏳ Same solution - retrying in 60 seconds..."
+                  sleep 60
+                else
+                  echo "🔁 Reached max retries - no new solution"
+                  exit 0
+                fi
+                ;;
+              *)
+                echo "❌ Fatal error detected - exiting workflow"
+                exit $exit_code
+                ;;
+          esac
+        done
 
     - name: Commit and push changes
+      if: success()
       run: |
         git add data.json past-solutions.json
-        git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-update puzzle data [skip ci]" && git push)
+        git diff --quiet && git diff --staged --quiet || \
+          (git commit -m "Auto-update puzzle solution [skip ci]" && git push)
