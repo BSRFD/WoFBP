@@ -38,7 +38,7 @@ jobs:
           echo "Attempt $attempt/20"
           
           # Run check and capture exit code
-          python check_puzzle.py
+          python fetch_puzzle.py
           exit_code=$?
           
           # Exit code meanings:
