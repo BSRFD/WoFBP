@@ -49,7 +49,7 @@ async function fetchData() {
         allTiles.forEach((tile, index) => {
             setTimeout(() => {
                 tile.classList.add('revealed');
-            }, index * 250); // 250ms between reveals
+            }, index * 50); // 250ms between reveals
         });
 
     } catch (error) {
