@@ -2,7 +2,7 @@ name: Puzzle Check
 on:
   workflow_dispatch:
   schedule:
-    - cron: '45 20 * * 1-5'  # 4:45 PM EDT (20:45 UTC) Mon-Fri
+    - cron: '30 21 * * 1-5'  # 4:45 PM EDT (20:45 UTC) Mon-Fri
 
 jobs:
   puzzle-check:
