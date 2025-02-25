@@ -2,7 +2,7 @@ name: Puzzle Check
 on:
   workflow_dispatch:
   schedule:
-    - cron: '55 21 * * 1-5'  # 4:45 PM EDT (20:45 UTC) Mon-Fri
+    - cron: '45 20 * * 1-5'  # 4:45 PM EDT (20:45 UTC) Mon-Fri
 
 jobs:
   puzzle-check:
@@ -34,32 +34,32 @@ jobs:
       env:
         TZ: America/New_York
       run: |
+        set +e  # Disable automatic error exit
+        
         for attempt in {1..20}; do
           output=$(python fetch_puzzle.py 2>&1)
           exit_code=$?
           
-          # Success - new solution found
-          if [ $exit_code -eq 0 ]; then
-            echo "✅ New solution found"
-            echo "$output"
-            exit 0
-          fi
-
-          # Retry case - same solution
-          if [ $exit_code -eq 1 ]; then
-            if [ $attempt -eq 20 ]; then
-              echo "🟡 No update after 20 attempts"
-              exit 0  # Graceful exit
-            fi
-            echo "⏳ Attempt $attempt/20 - No changes"
-            sleep 60
-            continue
-          fi
-
-          # Fatal error
-          echo "❌ Critical failure:"
-          echo "$output"
-          exit 1
+          case $exit_code in
+            0)
+              echo "✅ New solution found"
+              echo "$output"
+              exit 0
+              ;;
+            1)
+              if [ $attempt -eq 20 ]; then
+                echo "🟡 No update after 20 attempts"
+                exit 0  # Success exit for max retries
+              fi
+              echo "⏳ Attempt $attempt/20 - Retrying in 60 seconds..."
+              sleep 60
+              ;;
+            *)
+              echo "❌ Critical failure:"
+              echo "$output"
+              exit 1
+              ;;
+          esac
         done
 
     - name: Commit and push changes
