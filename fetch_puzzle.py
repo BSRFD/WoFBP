@@ -32,7 +32,7 @@ def fetch_api_data():
             if component.get('componentName') == 'bonusPuzzle':
                 puzzle_data = component.get('data', {})
                 return {
-                    'solution': self.parse_solution(puzzle_data.get('solution', '')),
+                    'solution': parse_solution(puzzle_data.get('solution', '')),  # FIXED HERE (removed self.)
                     'date': puzzle_data.get('date', '')
                 }
         raise ValueError("Bonus puzzle data not found")
