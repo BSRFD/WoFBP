@@ -36,7 +36,7 @@ jobs:
       run: |
         set +e  # Disable automatic error exit
         
-        for attempt in {1..20}; do
+        for attempt in {1..60}; do
           output=$(python fetch_puzzle.py 2>&1)
           exit_code=$?
           
@@ -47,11 +47,11 @@ jobs:
               exit 0
               ;;
             1)
-              if [ $attempt -eq 20 ]; then
-                echo "🟡 No update after 20 attempts"
+              if [ $attempt -eq 60 ]; then
+                echo "🟡 No update after 60 attempts"
                 exit 0  # Success exit for max retries
               fi
-              echo "⏳ Attempt $attempt/20 - Retrying in 60 seconds..."
+              echo "⏳ Attempt $attempt/60 - Retrying in 60 seconds..."
               sleep 60
               ;;
             *)
