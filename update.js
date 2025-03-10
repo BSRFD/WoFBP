@@ -1,4 +1,5 @@
 let historyLoaded = false;
+let lastUpdateCheck = Date.now();
 
 // Fisher-Yates shuffle algorithm
 function shuffleArray(array) {
@@ -19,7 +20,17 @@ async function fetchData() {
         dateElement.textContent = data.date;
         solutionElement.textContent = data.solution;
 
-        // Add click-to-copy functionality
+        // Auto-refresh check
+        if (Date.now() - lastUpdateCheck > 300000) { // 5 minutes
+            const freshCheck = await fetch(`data.json?rand=${Date.now()}`);
+            const freshData = await freshCheck.json();
+            if (freshData.date !== data.date) {
+                window.location.reload(true);
+            }
+            lastUpdateCheck = Date.now();
+        }
+
+        // Click-to-copy functionality
         solutionElement.style.cursor = 'pointer';
         solutionElement.addEventListener('click', async () => {
             try {
@@ -37,16 +48,13 @@ async function fetchData() {
         const words = data.solution.split(/\s+/);
         const allTiles = [];
         
-        // Create main container
         const wordContainer = document.createElement('div');
         wordContainer.className = 'word-container';
 
-        // Create rows for each word
         words.forEach(word => {
             const wordRow = document.createElement('div');
             wordRow.className = 'word-row';
             
-            // Create letter tiles
             [...word.toUpperCase()].forEach(letter => {
                 const tile = document.createElement('div');
                 tile.className = 'letter-tile';
@@ -60,7 +68,6 @@ async function fetchData() {
 
         puzzleDisplay.appendChild(wordContainer);
 
-        // Shuffle and reveal tiles randomly
         shuffleArray(allTiles);
         allTiles.forEach((tile, index) => {
             setTimeout(() => {
@@ -121,5 +128,4 @@ function toggleHistory() {
     }
 }
 
-// Initial load
 document.addEventListener('DOMContentLoaded', fetchData);
