@@ -66,9 +66,17 @@ h1 {
 
 .word-container {
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+}
+
+.word-row {
+    display: flex;
+    justify-content: center;
     gap: 5px;
     flex-wrap: wrap;
-    justify-content: center;
 }
 
 .letter-tile {
