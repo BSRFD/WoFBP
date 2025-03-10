@@ -21,35 +21,36 @@ async function fetchData() {
         
         const words = data.solution.split(/\s+/);
         const allTiles = [];
+        
+        // Create main container
+        const wordContainer = document.createElement('div');
+        wordContainer.className = 'word-container';
 
-        // Create all tiles first (blank state)
-        for (const word of words) {
-            const wordContainer = document.createElement('div');
-            wordContainer.className = 'word-container';
+        // Create rows for each word
+        words.forEach(word => {
+            const wordRow = document.createElement('div');
+            wordRow.className = 'word-row';
             
-            for (const letter of word.toUpperCase()) {
+            // Create letter tiles
+            [...word.toUpperCase()].forEach(letter => {
                 const tile = document.createElement('div');
                 tile.className = 'letter-tile';
                 tile.textContent = letter;
-                wordContainer.appendChild(tile);
+                wordRow.appendChild(tile);
                 allTiles.push(tile);
-            }
+            });
             
-            puzzleDisplay.appendChild(wordContainer);
-            
-            if (words.indexOf(word) < words.length - 1) {
-                const space = document.createElement('div');
-                space.className = 'word-space';
-                puzzleDisplay.appendChild(space);
-            }
-        }
+            wordContainer.appendChild(wordRow);
+        });
+
+        puzzleDisplay.appendChild(wordContainer);
 
         // Shuffle and reveal tiles randomly
         shuffleArray(allTiles);
         allTiles.forEach((tile, index) => {
             setTimeout(() => {
                 tile.classList.add('revealed');
-            }, index * 50); // 250ms between reveals
+            }, index * 50);
         });
 
     } catch (error) {
