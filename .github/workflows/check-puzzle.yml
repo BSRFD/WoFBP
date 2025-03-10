@@ -37,7 +37,10 @@ jobs:
         sed -i "s/__VERSION__/$TIMESTAMP/g" index.html
         sed -i "s/__VERSION__/$TIMESTAMP/g" style.css
         sed -i "s/__VERSION__/$TIMESTAMP/g" update.js
-
+        # Verify changes
+        echo "Modified files:"
+        git diff
+        
     - name: Check for solution updates
       env:
         TZ: America/New_York
