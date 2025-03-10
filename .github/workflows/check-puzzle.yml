@@ -2,8 +2,8 @@ name: Puzzle Check
 on:
   workflow_dispatch:
   schedule:
-    - cron: '30 20 * * 1-5'  # 4:30 PM EDT (when puzzle updates)
-    - cron: '30 21 * * 1-5'  # 5:30 PM EDT (fallback check)
+    - cron: '30 20 * * 1-5'
+    - cron: '30 21 * * 1-5'
 
 jobs:
   puzzle-check:
@@ -31,12 +31,19 @@ jobs:
         git config --global user.email "actions@github.com"
         git pull --ff-only
 
+    - name: Inject cache-buster
+      run: |
+        TIMESTAMP=$(date +%s)
+        sed -i "s/__VERSION__/$TIMESTAMP/g" index.html
+        sed -i "s/__VERSION__/$TIMESTAMP/g" style.css
+        sed -i "s/__VERSION__/$TIMESTAMP/g" update.js
+
     - name: Check for solution updates
       env:
         TZ: America/New_York
       id: check
       run: |
-        set +e  # Disable automatic error exit
+        set +e
         
         for attempt in {1..60}; do
           output=$(python fetch_puzzle.py 2>&1)
@@ -44,21 +51,20 @@ jobs:
           
           case $exit_code in
             0)
-              # Check if output indicates actual update
               if [[ "$output" == "Updated:"* ]]; then
                 echo "::set-output name=needs_commit::true"
-                echo "✅ New solution found: $output"
+                echo "✅ $output"
               else
-                echo "ℹ️ Already up-to-date: $output"
+                echo "ℹ️ $output"
               fi
               exit 0
               ;;
             1)
               if [ $attempt -eq 60 ]; then
-                echo "🟡 No update after 60 attempts (API not refreshed)"
+                echo "🟡 No update after 60 attempts"
                 exit 0
               fi
-              echo "⏳ Attempt $attempt/60 - API date older than today, retrying..."
+              echo "⏳ Attempt $attempt/60 - Retrying..."
               sleep 60
               ;;
             *)
@@ -71,6 +77,6 @@ jobs:
     - name: Commit and push changes
       if: steps.check.outputs.needs_commit == 'true'
       run: |
-        git add data.json past-solutions.json
+        git add data.json past-solutions.json index.html style.css update.js
         git commit -m "Auto-update puzzle solution [skip ci]"
         git push
