@@ -13,8 +13,23 @@ async function fetchData() {
         const response = await fetch(`data.json?rand=${Date.now()}`);
         const data = await response.json();
         
-        document.getElementById('date').textContent = data.date;
-        document.getElementById('solution').textContent = data.solution;
+        const dateElement = document.getElementById('date');
+        const solutionElement = document.getElementById('solution');
+        
+        dateElement.textContent = data.date;
+        solutionElement.textContent = data.solution;
+
+        // Add click-to-copy functionality
+        solutionElement.style.cursor = 'pointer';
+        solutionElement.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(data.solution);
+                showCopyFeedback('Copied to clipboard!');
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                showCopyFeedback('Failed to copy!');
+            }
+        });
 
         const puzzleDisplay = document.getElementById('puzzle-display');
         puzzleDisplay.innerHTML = '';
@@ -56,6 +71,19 @@ async function fetchData() {
     } catch (error) {
         console.error('Error:', error);
     }
+}
+
+function showCopyFeedback(message) {
+    const feedback = document.createElement('div');
+    feedback.className = 'copy-feedback';
+    feedback.textContent = message;
+    
+    document.body.appendChild(feedback);
+    
+    setTimeout(() => {
+        feedback.style.opacity = '0';
+        setTimeout(() => feedback.remove(), 300);
+    }, 1000);
 }
 
 async function loadHistory() {
