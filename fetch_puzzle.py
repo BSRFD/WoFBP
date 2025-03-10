@@ -14,6 +14,14 @@ def get_current_date():
     """Get current ET date in YYYY-MM-DD format"""
     return datetime.now(ET).strftime('%Y-%m-%d')
 
+def parse_api_date(api_date_str):
+    """Convert API date (Mar 10, 2025) to YYYY-MM-DD format"""
+    try:
+        dt = datetime.strptime(api_date_str, '%b %d, %Y')
+        return dt.strftime('%Y-%m-%d')
+    except ValueError:
+        raise ValueError(f"Invalid API date format: {api_date_str}")
+
 def get_current_data():
     """Get stored solution and date from data.json"""
     try:
@@ -36,9 +44,10 @@ def fetch_api_data():
         for component in data.get('components', []):
             if component.get('componentName') == 'bonusPuzzle':
                 puzzle_data = component.get('data', {})
+                raw_api_date = puzzle_data.get('date', '')
                 return {
                     'solution': parse_solution(puzzle_data.get('solution', '')),
-                    'date': puzzle_data.get('date', '')
+                    'date': parse_api_date(raw_api_date)  # FIXED HERE
                 }
         raise ValueError("Bonus puzzle data not found")
     
@@ -65,13 +74,11 @@ def archive_current_solution(current_solution, current_date):
             with open(HISTORY_FILE, 'r') as f:
                 history = json.load(f)
         
-        # Add entry only if date not already archived
         if not any(entry['date'] == current_date for entry in history):
             history.append({
                 "date": current_date,
                 "solution": current_solution
             })
-            # Keep max 1 year of history
             history = history[-365:]
             
             with open(HISTORY_FILE, 'w') as f:
@@ -83,33 +90,24 @@ def archive_current_solution(current_solution, current_date):
 
 def main():
     try:
-        # Get current ET date
         today = get_current_date()
-        
-        # Get stored data
         stored_data = get_current_data()
-        stored_date = stored_data['date']
-        stored_solution = stored_data['solution']
         
-        # Fetch API data
         api_data = fetch_api_data()
-        api_date = api_data['date']
+        api_date = api_data['date']  # Now in YYYY-MM-DD format
         api_solution = api_data['solution']
-        
-        # Decision logic
-        if api_date < today:
-            print(f"API date {api_date} older than today ({today}) - retry needed")
-            sys.exit(1)
+
+        if api_date > today:
+            print(f"API date {api_date} is in the future (today: {today})")
+            sys.exit(2)
         elif api_date == today:
-            if stored_date == today:
+            if stored_data['date'] == today:
                 print(f"Already up-to-date for {today}")
                 sys.exit(0)
             else:
-                # Archive previous solution if exists
-                if stored_date:
-                    archive_current_solution(stored_solution, stored_date)
+                if stored_data['date']:
+                    archive_current_solution(stored_data['solution'], stored_data['date'])
                 
-                # Write new solution
                 with open(DATA_FILE, 'w') as f:
                     json.dump({
                         "date": api_date,
@@ -119,8 +117,8 @@ def main():
                 print(f"Updated: {api_date} - {api_solution}")
                 sys.exit(0)
         else:
-            print(f"API date {api_date} is in the future (today: {today})")
-            sys.exit(2)
+            print(f"API date {api_date} older than today ({today}) - retry needed")
+            sys.exit(1)
 
     except Exception as e:
         print(f"Critical Error: {str(e)}")
