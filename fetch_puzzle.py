@@ -11,7 +11,7 @@ HISTORY_FILE = "past-solutions.json"
 ET = pytz.timezone('America/New_York')
 
 def get_current_date():
-    """Get current date in ET timezone (YYYY-MM-DD format)"""
+    """Get current ET date in YYYY-MM-DD format"""
     return datetime.now(ET).strftime('%Y-%m-%d')
 
 def get_current_data():
@@ -27,7 +27,7 @@ def get_current_data():
         return {'solution': '', 'date': ''}
 
 def fetch_api_data():
-    """Get API solution and date"""
+    """Fetch and parse API data"""
     try:
         response = requests.get(API_URL, timeout=10)
         response.raise_for_status()
@@ -47,6 +47,7 @@ def fetch_api_data():
         sys.exit(2)
 
 def parse_solution(raw_solution):
+    """Format solution string"""
     return ' '.join(
         part.strip().upper()
         for part in raw_solution.split('/')
@@ -54,36 +55,61 @@ def parse_solution(raw_solution):
     )
 
 def archive_current_solution(current_solution, current_date):
-    # Existing implementation remains the same
-    # ...
+    """Archive previous solutions"""
+    try:
+        if not current_solution:
+            return
+
+        history = []
+        if os.path.exists(HISTORY_FILE):
+            with open(HISTORY_FILE, 'r') as f:
+                history = json.load(f)
+        
+        # Add entry only if date not already archived
+        if not any(entry['date'] == current_date for entry in history):
+            history.append({
+                "date": current_date,
+                "solution": current_solution
+            })
+            # Keep max 1 year of history
+            history = history[-365:]
+            
+            with open(HISTORY_FILE, 'w') as f:
+                json.dump(history, f, indent=2)
+                
+    except Exception as e:
+        print(f"Archive Error: {str(e)}")
+        sys.exit(2)
 
 def main():
     try:
-        # Get current real-world date
+        # Get current ET date
         today = get_current_date()
+        
+        # Get stored data
         stored_data = get_current_data()
         stored_date = stored_data['date']
-
-        # Get API data
+        stored_solution = stored_data['solution']
+        
+        # Fetch API data
         api_data = fetch_api_data()
         api_date = api_data['date']
         api_solution = api_data['solution']
-
+        
         # Decision logic
         if api_date < today:
-            # API hasn't updated yet - retry needed
-            print(f"API date {api_date} is older than today ({today})")
+            print(f"API date {api_date} older than today ({today}) - retry needed")
             sys.exit(1)
         elif api_date == today:
             if stored_date == today:
-                # Already have today's puzzle
-                print(f"Already up-to-date: {today}")
+                print(f"Already up-to-date for {today}")
                 sys.exit(0)
             else:
-                # New puzzle for today
+                # Archive previous solution if exists
                 if stored_date:
-                    archive_current_solution(stored_data['solution'], stored_date)
+                    archive_current_solution(stored_solution, stored_date)
                 
+                # Write new solution
                 with open(DATA_FILE, 'w') as f:
                     json.dump({
                         "date": api_date,
@@ -93,8 +119,7 @@ def main():
                 print(f"Updated: {api_date} - {api_solution}")
                 sys.exit(0)
         else:
-            # Future date (shouldn't happen)
-            print(f"API date {api_date} is in the future")
+            print(f"API date {api_date} is in the future (today: {today})")
             sys.exit(2)
 
     except Exception as e:
