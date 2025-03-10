@@ -2,8 +2,8 @@ name: Puzzle Check
 on:
   workflow_dispatch:
   schedule:
-    - cron: '30 20 * * 1-5'  # Runs at 20:30 UTC (4:30 PM EDT, 3:30 PM EST)
-    - cron: '30 21 * * 1-5'  # Runs at 21:30 UTC (5:30 PM EDT, 4:30 PM EST)
+    - cron: '30 20 * * 1-5'  # 4:30 PM EDT (when puzzle updates)
+    - cron: '30 21 * * 1-5'  # 5:30 PM EDT (fallback check)
 
 jobs:
   puzzle-check:
@@ -34,6 +34,7 @@ jobs:
     - name: Check for solution updates
       env:
         TZ: America/New_York
+      id: check
       run: |
         set +e  # Disable automatic error exit
         
@@ -43,29 +44,33 @@ jobs:
           
           case $exit_code in
             0)
-              echo "✅ New solution found"
-              echo "$output"
+              # Check if output indicates actual update
+              if [[ "$output" == "Updated:"* ]]; then
+                echo "::set-output name=needs_commit::true"
+                echo "✅ New solution found: $output"
+              else
+                echo "ℹ️ Already up-to-date: $output"
+              fi
               exit 0
               ;;
             1)
               if [ $attempt -eq 60 ]; then
-                echo "🟡 No update after 60 attempts"
-                exit 0  # Success exit for max retries
+                echo "🟡 No update after 60 attempts (API not refreshed)"
+                exit 0
               fi
-              echo "⏳ Attempt $attempt/60 - Retrying in 60 seconds..."
+              echo "⏳ Attempt $attempt/60 - API date older than today, retrying..."
               sleep 60
               ;;
             *)
-              echo "❌ Critical failure:"
-              echo "$output"
+              echo "❌ Critical failure: $output"
               exit 1
               ;;
           esac
         done
 
     - name: Commit and push changes
-      if: success()
+      if: steps.check.outputs.needs_commit == 'true'
       run: |
         git add data.json past-solutions.json
-        git diff --quiet && git diff --staged --quiet || \
-          (git commit -m "Auto-update puzzle solution [skip ci]" && git push)
+        git commit -m "Auto-update puzzle solution [skip ci]"
+        git push
