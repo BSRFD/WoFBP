@@ -21,7 +21,7 @@ async function fetchData() {
         solutionElement.textContent = data.solution;
 
         // Auto-refresh check
-        if (Date.now() - lastUpdateCheck > 300000) { // 5 minutes
+        if (Date.now() - lastUpdateCheck > 300000) {
             const freshCheck = await fetch(`data.json?rand=${Date.now()}`);
             const freshData = await freshCheck.json();
             if (freshData.date !== data.date) {
@@ -32,6 +32,7 @@ async function fetchData() {
 
         // Click-to-copy functionality
         solutionElement.style.cursor = 'pointer';
+        solutionElement.setAttribute('title', 'Click to copy');
         solutionElement.addEventListener('click', async () => {
             try {
                 await navigator.clipboard.writeText(data.solution);
@@ -83,14 +84,25 @@ async function fetchData() {
 function showCopyFeedback(message) {
     const feedback = document.createElement('div');
     feedback.className = 'copy-feedback';
+    feedback.setAttribute('role', 'alert');
+    feedback.setAttribute('aria-live', 'polite');
     feedback.textContent = message;
+    
+    // Clear existing feedback
+    const existing = document.querySelector('.copy-feedback');
+    if (existing) existing.remove();
     
     document.body.appendChild(feedback);
     
+    // Force reflow to enable animation
+    void feedback.offsetWidth;
+    
+    feedback.style.opacity = '1';
+    
     setTimeout(() => {
         feedback.style.opacity = '0';
-        setTimeout(() => feedback.remove(), 300);
-    }, 1000);
+        setTimeout(() => feedback.remove(), 500);
+    }, 1500);
 }
 
 async function loadHistory() {
