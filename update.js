@@ -119,8 +119,8 @@ function showCopyFeedback(message) {
 }
 
 async function loadHistory() {
-    try {
-        const response = await fetch('past-solutions.json');
+        try {
+        const response = await fetch(`past-solutions.json?rand=${Date.now()}`); // ← Add cache bust
         const pastSolutions = await response.json();
         const list = document.getElementById('solution-list');
         
