@@ -18,11 +18,7 @@ async function fetchData() {
         const solutionElement = document.getElementById('solution');
         
         dateElement.textContent = data.date;
-        
-        // Modified solution display with timestamp
-        const addedDate = data.added_utc ? new Date(data.added_utc) : null;
-        solutionElement.innerHTML = data.solution + 
-            (addedDate ? `<div class="timestamp">Added: ${addedDate.toLocaleString()}</div>` : '');
+        solutionElement.textContent = data.solution;
 
         // Auto-refresh check
         if (Date.now() - lastUpdateCheck > 300000) {
@@ -50,6 +46,19 @@ async function fetchData() {
         const puzzleDisplay = document.getElementById('puzzle-display');
         puzzleDisplay.innerHTML = '';
         
+        // Add timestamp to puzzle board
+        const addedDate = data.added_utc ? new Date(data.added_utc) : null;
+        if (addedDate) {
+            const timeContainer = document.createElement('div');
+            timeContainer.className = 'puzzle-timestamp';
+            timeContainer.textContent = `Added: ${addedDate.toLocaleTimeString([], { 
+                hour: 'numeric', 
+                minute: '2-digit',
+                hour12: true 
+            })}`;
+            puzzleDisplay.appendChild(timeContainer);
+        }
+
         const words = data.solution.split(/\s+/);
         const allTiles = [];
         
@@ -119,12 +128,19 @@ async function loadHistory() {
             .reverse()
             .map(item => {
                 const addedDate = item.added_utc ? new Date(item.added_utc) : null;
+                const timeString = addedDate ? 
+                    addedDate.toLocaleTimeString([], { 
+                        hour: 'numeric', 
+                        minute: '2-digit',
+                        hour12: true 
+                    }) : '';
                 return `
                     <div class="history-solution-item">
-                        <div class="history-date">${item.date}</div>
+                        <div class="history-date" ${timeString ? `title="Added at ${timeString}"` : ''}>
+                            ${item.date}
+                        </div>
                         <div class="history-solution">
                             ${item.solution}
-                            ${addedDate ? `<div class="timestamp">Added: ${addedDate.toLocaleString()}</div>` : ''}
                         </div>
                     </div>
                 `;
