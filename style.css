@@ -347,6 +347,6 @@ h1 {
     .puzzle-timestamp {
         font-size: 0.8em;
         right: 10px;
-        top: 8px;
+        bottom: 8px;
     }
 }
