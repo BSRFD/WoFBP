@@ -321,4 +321,30 @@ h1 {
     .history-solution {
         font-size: 1.2em;
     }
+    /* Add these new styles at the end */
+.timestamp {
+    font-size: 0.75em;
+    color: rgba(255,255,255,0.6);
+    font-weight: normal;
+    margin-top: 4px;
+    letter-spacing: 0.5px;
+}
+
+.history-solution .timestamp {
+    font-size: 0.65em;
+    color: rgba(255,255,255,0.4);
+    margin-top: 2px;
+}
+
+/* Adjust existing styles */
+.info-value {
+    position: relative;
+    padding-bottom: 8px;
+}
+
+.history-solution {
+    position: relative;
+    padding-bottom: 4px;
+}
+    
 }
