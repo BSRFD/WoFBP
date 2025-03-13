@@ -18,7 +18,11 @@ async function fetchData() {
         const solutionElement = document.getElementById('solution');
         
         dateElement.textContent = data.date;
-        solutionElement.textContent = data.solution;
+        
+        // Modified solution display with timestamp
+        const addedDate = data.added_utc ? new Date(data.added_utc) : null;
+        solutionElement.innerHTML = data.solution + 
+            (addedDate ? `<div class="timestamp">Added: ${addedDate.toLocaleString()}</div>` : '');
 
         // Auto-refresh check
         if (Date.now() - lastUpdateCheck > 300000) {
@@ -113,12 +117,18 @@ async function loadHistory() {
         
         list.innerHTML = pastSolutions
             .reverse()
-            .map(item => `
-                <div class="history-solution-item">
-                    <div class="history-date">${item.date}</div>
-                    <div class="history-solution">${item.solution}</div>
-                </div>
-            `).join('');
+            .map(item => {
+                const addedDate = item.added_utc ? new Date(item.added_utc) : null;
+                return `
+                    <div class="history-solution-item">
+                        <div class="history-date">${item.date}</div>
+                        <div class="history-solution">
+                            ${item.solution}
+                            ${addedDate ? `<div class="timestamp">Added: ${addedDate.toLocaleString()}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
 
         historyLoaded = true;
     } catch (error) {
