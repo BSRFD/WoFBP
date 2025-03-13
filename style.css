@@ -51,6 +51,7 @@ h1 {
     overflow-x: auto;
     box-shadow: 0 0 30px rgba(0,0,0,0.5);
     box-sizing: border-box;
+    position: relative;
 }
 
 .puzzle-display {
@@ -154,11 +155,15 @@ h1 {
 }
 
 #solution {
-    transition: all 0.2s ease;
     position: relative;
     display: inline-block;
     padding-right: 25px;
     cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 1.4em;
+    font-weight: bold;
+    color: white;
+    font-family: 'Roboto Condensed', sans-serif;
 }
 
 #solution:hover {
@@ -171,9 +176,9 @@ h1 {
     content: '📋';
     position: absolute;
     right: 0;
-    top: 50%;
+    top: 55%;
     transform: translateY(-50%);
-    font-size: 0.8em;
+    font-size: 0.7em;
     opacity: 0.7;
     transition: opacity 0.2s ease;
 }
@@ -279,6 +284,13 @@ h1 {
     font-family: 'Passion One', cursive;
     font-size: 1.4em;
     width: 45%;
+    cursor: help;
+    border-bottom: 1px dotted rgba(255,255,255,0.3);
+    transition: color 0.2s ease;
+}
+
+.history-date:hover {
+    color: #ffec8b;
 }
 
 .history-solution {
@@ -288,6 +300,16 @@ h1 {
     font-weight: bold;
     width: 55%;
     text-align: right;
+}
+
+.puzzle-timestamp {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    color: rgba(255,255,255,0.7);
+    font-size: 0.9em;
+    font-style: italic;
+    z-index: 1;
 }
 
 @media (max-width: 600px) {
@@ -321,30 +343,10 @@ h1 {
     .history-solution {
         font-size: 1.2em;
     }
-    /* Add these new styles at the end */
-.timestamp {
-    font-size: 0.75em;
-    color: rgba(255,255,255,0.6);
-    font-weight: normal;
-    margin-top: 4px;
-    letter-spacing: 0.5px;
-}
 
-.history-solution .timestamp {
-    font-size: 0.65em;
-    color: rgba(255,255,255,0.4);
-    margin-top: 2px;
-}
-
-/* Adjust existing styles */
-.info-value {
-    position: relative;
-    padding-bottom: 8px;
-}
-
-.history-solution {
-    position: relative;
-    padding-bottom: 4px;
-}
-    
+    .puzzle-timestamp {
+        font-size: 0.8em;
+        right: 10px;
+        top: 8px;
+    }
 }
