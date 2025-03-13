@@ -11,11 +11,9 @@ HISTORY_FILE = "past-solutions.json"
 ET = pytz.timezone('America/New_York')
 
 def get_current_date():
-    """Get current ET date in YYYY-MM-DD format"""
     return datetime.now(ET).strftime('%Y-%m-%d')
 
 def parse_api_date(api_date_str):
-    """Convert API date (Mar 10, 2025) to YYYY-MM-DD format"""
     try:
         dt = datetime.strptime(api_date_str, '%b %d, %Y')
         return dt.strftime('%Y-%m-%d')
@@ -23,19 +21,18 @@ def parse_api_date(api_date_str):
         raise ValueError(f"Invalid API date format: {api_date_str}")
 
 def get_current_data():
-    """Get stored solution and date from data.json"""
     try:
         with open(DATA_FILE, 'r') as f:
             data = json.load(f)
             return {
                 'solution': data.get('solution', ''),
-                'date': data.get('date', '')
+                'date': data.get('date', ''),
+                'added_utc': data.get('added_utc', '')  # New line
             }
     except (FileNotFoundError, json.JSONDecodeError):
-        return {'solution': '', 'date': ''}
+        return {'solution': '', 'date': '', 'added_utc': ''}
 
 def fetch_api_data():
-    """Fetch and parse API data"""
     try:
         response = requests.get(API_URL, timeout=10)
         response.raise_for_status()
@@ -47,7 +44,7 @@ def fetch_api_data():
                 raw_api_date = puzzle_data.get('date', '')
                 return {
                     'solution': parse_solution(puzzle_data.get('solution', '')),
-                    'date': parse_api_date(raw_api_date)  # FIXED HERE
+                    'date': parse_api_date(raw_api_date)
                 }
         raise ValueError("Bonus puzzle data not found")
     
@@ -55,16 +52,7 @@ def fetch_api_data():
         print(f"API Error: {str(e)}")
         sys.exit(2)
 
-def parse_solution(raw_solution):
-    """Format solution string"""
-    return ' '.join(
-        part.strip().upper()
-        for part in raw_solution.split('/')
-        if part.strip()
-    )
-
-def archive_current_solution(current_solution, current_date):
-    """Archive previous solutions"""
+def archive_current_solution(current_solution, current_date, current_timestamp):
     try:
         if not current_solution:
             return
@@ -74,11 +62,14 @@ def archive_current_solution(current_solution, current_date):
             with open(HISTORY_FILE, 'r') as f:
                 history = json.load(f)
         
-        if not any(entry['date'] == current_date for entry in history):
-            history.append({
-                "date": current_date,
-                "solution": current_solution
-            })
+        entry = {
+            "date": current_date,
+            "solution": current_solution,
+            "added_utc": current_timestamp  # New field
+        }
+        
+        if not any(e['date'] == current_date for e in history):
+            history.append(entry)
             history = history[-365:]
             
             with open(HISTORY_FILE, 'w') as f:
@@ -94,7 +85,7 @@ def main():
         stored_data = get_current_data()
         
         api_data = fetch_api_data()
-        api_date = api_data['date']  # Now in YYYY-MM-DD format
+        api_date = api_data['date']
         api_solution = api_data['solution']
 
         if api_date > today:
@@ -106,12 +97,17 @@ def main():
                 sys.exit(0)
             else:
                 if stored_data['date']:
-                    archive_current_solution(stored_data['solution'], stored_data['date'])
+                    archive_current_solution(
+                        stored_data['solution'],
+                        stored_data['date'],
+                        stored_data.get('added_utc', datetime.utcnow().isoformat())  # Preserve timestamp
+                    )
                 
                 with open(DATA_FILE, 'w') as f:
                     json.dump({
                         "date": api_date,
-                        "solution": api_solution
+                        "solution": api_solution,
+                        "added_utc": datetime.utcnow().isoformat()  # New timestamp
                     }, f, indent=2)
                 
                 print(f"Updated: {api_date} - {api_solution}")
@@ -123,6 +119,6 @@ def main():
     except Exception as e:
         print(f"Critical Error: {str(e)}")
         sys.exit(2)
-
+        
 if __name__ == "__main__":
     main()
