@@ -154,16 +154,20 @@ h1 {
     font-size: 1.2em;
 }
 
+/* Added .info-value class for date/solution consistency */
+.info-value {
+    color: white;
+    font-size: 1.4em;
+    font-weight: bold;
+    font-family: 'Roboto Condensed', sans-serif;
+}
+
 #solution {
     position: relative;
     display: inline-block;
     padding-right: 25px;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 1.4em;
-    font-weight: bold;
-    color: white;
-    font-family: 'Roboto Condensed', sans-serif;
 }
 
 #solution:hover {
