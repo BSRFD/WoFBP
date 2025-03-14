@@ -37,10 +37,9 @@ jobs:
         sed -i "s/__VERSION__/$TIMESTAMP/g" index.html
         sed -i "s/__VERSION__/$TIMESTAMP/g" style.css
         sed -i "s/__VERSION__/$TIMESTAMP/g" update.js
-        # Verify changes
         echo "Modified files:"
         git diff
-        
+
     - name: Check for solution updates
       env:
         TZ: America/New_York
@@ -49,18 +48,26 @@ jobs:
         set +e
         
         for attempt in {1..60}; do
-          output=$(python fetch_puzzle.py 2>&1)
+          output=$(python -W ignore fetch_puzzle.py 2>warnings.log)
           exit_code=$?
+          warnings=$(cat warnings.log)
+          
+          if [[ "$warnings" == *"Updated:"* ]]; then
+            echo "::set-output name=needs_commit::true"
+            echo "✅ Update found"
+            exit 0
+          fi
           
           case $exit_code in
             0)
-              if [[ "$output" == "Updated:"* ]]; then
+              if [[ "$output" == *"Updated:"* ]]; then
                 echo "::set-output name=needs_commit::true"
                 echo "✅ $output"
+                exit 0
               else
                 echo "ℹ️ $output"
+                exit 0
               fi
-              exit 0
               ;;
             1)
               if [ $attempt -eq 60 ]; then
@@ -71,7 +78,8 @@ jobs:
               sleep 60
               ;;
             *)
-              echo "❌ Critical failure: $output"
+              echo "❌ Critical failure:"
+              echo "$warnings"
               exit 1
               ;;
           esac
@@ -80,6 +88,6 @@ jobs:
     - name: Commit and push changes
       if: steps.check.outputs.needs_commit == 'true'
       run: |
-        git add data.json past-solutions.json index.html style.css update.js
+        git add data.json past-solutions.json
         git commit -m "Auto-update puzzle solution [skip ci]"
         git push
