@@ -53,7 +53,7 @@ jobs:
           warnings=$(cat warnings.log)
           
           if [[ "$warnings" == *"Updated:"* ]]; then
-            echo "::set-output name=needs_commit::true"
+            echo "needs_commit=true" >> $GITHUB_OUTPUT
             echo "✅ Update found"
             exit 0
           fi
@@ -61,7 +61,7 @@ jobs:
           case $exit_code in
             0)
               if [[ "$output" == *"Updated:"* ]]; then
-                echo "::set-output name=needs_commit::true"
+                echo "needs_commit=true" >> $GITHUB_OUTPUT
                 echo "✅ $output"
                 exit 0
               else
@@ -86,7 +86,7 @@ jobs:
         done
 
     - name: Commit and push changes
-      if: steps.check.outputs.needs_commit == 'true'
+      if: ${{ steps.check.outputs.needs_commit == 'true' }}
       run: |
         git add data.json past-solutions.json
         git commit -m "Auto-update puzzle solution [skip ci]"
