@@ -3,7 +3,7 @@ import json
 import sys
 import os
 import pytz
-from datetime import datetime
+from datetime import datetime, timezone
 
 API_URL = "https://www.wheeloffortune.com/api/bonus-puzzle-data"
 DATA_FILE = "data.json"
@@ -23,6 +23,7 @@ def get_current_date():
     return datetime.now(ET).strftime('%Y-%m-%d')
 
 def parse_api_date(api_date_str):
+    """Convert API date (Mar 10, 2025) to YYYY-MM-DD format"""
     try:
         dt = datetime.strptime(api_date_str, '%b %d, %Y')
         return dt.strftime('%Y-%m-%d')
@@ -30,18 +31,20 @@ def parse_api_date(api_date_str):
         raise ValueError(f"Invalid API date format: {api_date_str}")
 
 def get_current_data():
+    """Get stored solution and date from data.json"""
     try:
         with open(DATA_FILE, 'r') as f:
             data = json.load(f)
             return {
                 'solution': data.get('solution', ''),
                 'date': data.get('date', ''),
-                'added_utc': data.get('added_utc', '')  # New line
+                'added_utc': data.get('added_utc', '')
             }
     except (FileNotFoundError, json.JSONDecodeError):
         return {'solution': '', 'date': '', 'added_utc': ''}
 
 def fetch_api_data():
+    """Fetch and parse API data"""
     try:
         response = requests.get(API_URL, timeout=10)
         response.raise_for_status()
@@ -50,10 +53,9 @@ def fetch_api_data():
         for component in data.get('components', []):
             if component.get('componentName') == 'bonusPuzzle':
                 puzzle_data = component.get('data', {})
-                raw_api_date = puzzle_data.get('date', '')
                 return {
                     'solution': parse_solution(puzzle_data.get('solution', '')),
-                    'date': parse_api_date(raw_api_date)
+                    'date': parse_api_date(puzzle_data.get('date', ''))
                 }
         raise ValueError("Bonus puzzle data not found")
     
@@ -61,7 +63,8 @@ def fetch_api_data():
         print(f"API Error: {str(e)}")
         sys.exit(2)
 
-def archive_current_solution(current_solution, current_date, current_timestamp):
+def archive_current_solution(current_solution, current_date):
+    """Archive previous solutions"""
     try:
         if not current_solution:
             return
@@ -74,7 +77,7 @@ def archive_current_solution(current_solution, current_date, current_timestamp):
         entry = {
             "date": current_date,
             "solution": current_solution,
-            "added_utc": current_timestamp  # New field
+            "added_utc": datetime.now(timezone.utc).isoformat()
         }
         
         if not any(e['date'] == current_date for e in history):
@@ -108,15 +111,14 @@ def main():
                 if stored_data['date']:
                     archive_current_solution(
                         stored_data['solution'],
-                        stored_data['date'],
-                        stored_data.get('added_utc', datetime.utcnow().isoformat())  # Preserve timestamp
+                        stored_data['date']
                     )
                 
                 with open(DATA_FILE, 'w') as f:
                     json.dump({
                         "date": api_date,
                         "solution": api_solution,
-                        "added_utc": datetime.utcnow().isoformat()  # New timestamp
+                        "added_utc": datetime.now(timezone.utc).isoformat()
                     }, f, indent=2)
                 
                 print(f"Updated: {api_date} - {api_solution}")
@@ -128,6 +130,6 @@ def main():
     except Exception as e:
         print(f"Critical Error: {str(e)}")
         sys.exit(2)
-        
+
 if __name__ == "__main__":
     main()
