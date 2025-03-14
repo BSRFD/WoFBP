@@ -10,7 +10,16 @@ DATA_FILE = "data.json"
 HISTORY_FILE = "past-solutions.json"
 ET = pytz.timezone('America/New_York')
 
+def parse_solution(raw_solution):
+    """Clean and format the solution string"""
+    return ' '.join(
+        part.strip().upper()
+        for part in raw_solution.split('/')
+        if part.strip()
+    )
+
 def get_current_date():
+    """Get current ET date in YYYY-MM-DD format"""
     return datetime.now(ET).strftime('%Y-%m-%d')
 
 def parse_api_date(api_date_str):
