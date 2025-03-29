@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '30 20 * * 1-5'
-    - cron: '30 21 * * 1-5'
+						   
 
 jobs:
   puzzle-check:
@@ -47,7 +47,7 @@ jobs:
       run: |
         set +e
         
-        for attempt in {1..60}; do
+        for attempt in {1..360}; do
           output=$(python -W ignore fetch_puzzle.py 2>warnings.log)
           exit_code=$?
           warnings=$(cat warnings.log)
@@ -70,11 +70,11 @@ jobs:
               fi
               ;;
             1)
-              if [ $attempt -eq 60 ]; then
-                echo "🟡 No update after 60 attempts"
+              if [ $attempt -eq 360 ]; then
+                echo "🟡 No update after 360 attempts"
                 exit 0
               fi
-              echo "⏳ Attempt $attempt/60 - Retrying..."
+              echo "⏳ Attempt $attempt/360 - Retrying..."
               sleep 60
               ;;
             *)
