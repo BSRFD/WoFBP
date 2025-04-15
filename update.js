@@ -61,55 +61,26 @@ async function fetchData() {
 
         const words = data.solution.split(/\s+/);
         const allTiles = [];
-        const phraseContainer = document.createElement('div');
-        phraseContainer.className = 'phrase-container';
+        
+        const wordContainer = document.createElement('div');
+        wordContainer.className = 'word-container';
 
-        // Wheel of Fortune line-breaking logic
-        const MAX_TILES_PER_LINE = 14;
-        let currentLine = document.createElement('div');
-        currentLine.className = 'phrase-line';
-        let currentTileCount = 0;
-
-        words.forEach((word, index) => {
-            const wordLength = word.length;
-            const spacerNeeded = index < words.length - 1;
-            const totalWordTiles = wordLength + (spacerNeeded ? 1 : 0);
-
-            if (currentTileCount + totalWordTiles > MAX_TILES_PER_LINE) {
-                // Start new line
-                phraseContainer.appendChild(currentLine);
-                currentLine = document.createElement('div');
-                currentLine.className = 'phrase-line';
-                currentTileCount = 0;
-            }
-
-            const wordGroup = document.createElement('div');
-            wordGroup.className = 'word-group';
+        words.forEach(word => {
+            const wordRow = document.createElement('div');
+            wordRow.className = 'word-row';
             
-            // Add letter tiles
             [...word.toUpperCase()].forEach(letter => {
                 const tile = document.createElement('div');
                 tile.className = 'letter-tile';
                 tile.textContent = letter;
-                wordGroup.appendChild(tile);
+                wordRow.appendChild(tile);
                 allTiles.push(tile);
             });
             
-            currentLine.appendChild(wordGroup);
-            currentTileCount += wordLength;
-
-            // Add spacer if needed
-            if (spacerNeeded) {
-                const spacer = document.createElement('div');
-                spacer.className = 'word-spacer';
-                currentLine.appendChild(spacer);
-                currentTileCount += 1;
-            }
+            wordContainer.appendChild(wordRow);
         });
 
-        // Add the final line
-        phraseContainer.appendChild(currentLine);
-        puzzleDisplay.appendChild(phraseContainer);
+        puzzleDisplay.appendChild(wordContainer);
 
         shuffleArray(allTiles);
         allTiles.forEach((tile, index) => {
@@ -148,8 +119,8 @@ function showCopyFeedback(message) {
 }
 
 async function loadHistory() {
-    try {
-        const response = await fetch(`past-solutions.json?rand=${Date.now()}`);
+        try {
+        const response = await fetch(`past-solutions.json?rand=${Date.now()}`); // ← Add cache bust
         const pastSolutions = await response.json();
         const list = document.getElementById('solution-list');
         
