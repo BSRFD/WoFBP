@@ -3,6 +3,7 @@ import json
 import sys
 import os
 import pytz
+import time  # Added for cache busting
 from datetime import datetime, timezone
 
 API_URL = "https://www.wheeloffortune.com/api/bonus-puzzle-data"
@@ -44,9 +45,14 @@ def get_current_data():
         return {'solution': '', 'date': '', 'added_utc': ''}
 
 def fetch_api_data():
-    """Fetch and parse API data"""
+    """Fetch and parse API data with cache busting"""
     try:
-        response = requests.get(API_URL, timeout=10)
+        # Added cache-buster parameter
+        response = requests.get(
+            API_URL,
+            params={'cache_buster': time.time()},  # Unique value for each request
+            timeout=10
+        )
         response.raise_for_status()
         data = response.json()
         
