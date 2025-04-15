@@ -43,7 +43,7 @@ h1 {
     background: var(--dark-blue);
     border: 8px solid var(--gold);
     border-radius: 15px;
-    padding: 20px;
+    padding: 15px 20px;
     margin: 20px auto;
     width: 90%;
     max-width: 800px;
@@ -52,46 +52,61 @@ h1 {
     box-shadow: 0 0 30px rgba(0,0,0,0.5);
     box-sizing: border-box;
     position: relative;
+    min-height: auto;
 }
 
 .puzzle-display {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-    padding: 10px;
-    min-height: 120px;
-    width: 100%;
-    box-sizing: border-box;
+    display: block;
+    padding: 25px;
+    min-height: 150px;
 }
 
-.word-container {
+.phrase-container {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 15px;
-    width: 100%;
 }
 
-.word-row {
+.phrase-line {
     display: flex;
-    justify-content: center;
-    gap: 5px;
     flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.word-group {
+    display: flex;
+    gap: 5px;
+    position: relative;
+}
+
+.word-group::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 4px;
+    background: var(--gold);
+    border-radius: 2px;
+    opacity: 0.4;
 }
 
 .letter-tile {
     background: var(--dark-blue);
-    border: 2px solid var(--gold);
+    border: 3px solid var(--gold);
     border-radius: 5px;
     color: transparent;
-    font-size: 2em;
+    font-size: 2.2em;
     font-weight: bold;
     text-align: center;
     padding: 15px;
-    min-width: 50px;
-    max-width: 50px;
-    height: 60px;
+    min-width: 55px;
+    height: 65px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -130,6 +145,14 @@ h1 {
     100% { opacity: 0; }
 }
 
+.word-spacer {
+    width: 30px;
+    height: 4px;
+    background: rgba(255,215,0,0.3);
+    margin: 0 10px;
+    align-self: center;
+}
+
 .info-panel {
     background: rgba(0,0,0,0.7);
     border-radius: 10px;
@@ -154,7 +177,6 @@ h1 {
     font-size: 1.2em;
 }
 
-/* Added .info-value class for date/solution consistency */
 .info-value {
     color: white;
     font-size: 1.4em;
@@ -327,9 +349,24 @@ h1 {
     }
     
     .letter-tile {
-        min-width: 30px;
-        font-size: 1.5em;
+        min-width: 25px;
+        font-size: 1.4em;
         padding: 8px;
+        height: 50px;
+    }
+    
+    .phrase-line {
+        gap: 8px;
+    }
+    
+    .word-spacer {
+        width: 20px;
+        margin: 0 5px;
+    }
+    
+    .word-group::after {
+        bottom: -7px;
+        height: 3px;
     }
     
     .history-header span {
