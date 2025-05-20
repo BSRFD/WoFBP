@@ -12,20 +12,19 @@ function shuffleArray(array) {
 // --- FUNCTION to display any puzzle on the board ---
 function displayPuzzleOnBoard(dateStr, solutionStr, addedUtcStr) {
     const dateElement = document.getElementById('date');
-    const solutionElementOriginal = document.getElementById('solution'); // Get the original element
+    const solutionElementOriginal = document.getElementById('solution'); 
     
     if (dateElement) dateElement.textContent = dateStr;
     
-    // Recreate or update solutionElement to handle event listeners correctly
     if (solutionElementOriginal) {
-        const newSolutionElement = solutionElementOriginal.cloneNode(false); // Clone structure, not deep children
-        newSolutionElement.textContent = solutionStr; // Set the text content
-        newSolutionElement.id = 'solution'; // Ensure ID is maintained
-        newSolutionElement.className = 'info-value'; // Ensure class is maintained
+        const newSolutionElement = solutionElementOriginal.cloneNode(false); 
+        newSolutionElement.textContent = solutionStr; 
+        newSolutionElement.id = 'solution'; 
+        newSolutionElement.className = 'info-value'; 
         newSolutionElement.style.cursor = 'pointer';
         newSolutionElement.setAttribute('title', 'Click to copy');
         
-        solutionElementOriginal.parentNode.replaceChild(newSolutionElement, solutionElementOriginal); // Replace old with new
+        solutionElementOriginal.parentNode.replaceChild(newSolutionElement, solutionElementOriginal); 
     
         newSolutionElement.addEventListener('click', async () => {
             try {
@@ -38,15 +37,15 @@ function displayPuzzleOnBoard(dateStr, solutionStr, addedUtcStr) {
         });
     }
 
-
     const puzzleDisplay = document.getElementById('puzzle-display');
     if (!puzzleDisplay) return; 
 
     puzzleDisplay.innerHTML = ''; 
     
-    const addedDate = addedUtcStr && addedUtcStr !== 'null' && addedUtcStr !== 'undefined' ? new Date(addedUtcStr) : null;
+    // Check if addedUtcStr is a non-empty string before creating Date object
+    const addedDate = (typeof addedUtcStr === 'string' && addedUtcStr.trim() !== '') ? new Date(addedUtcStr) : null;
     let timeContainer = null;
-    if (addedDate && !isNaN(addedDate)) { // Check if date is valid
+    if (addedDate && !isNaN(addedDate)) { 
         timeContainer = document.createElement('div');
         timeContainer.className = 'puzzle-timestamp';
         timeContainer.textContent = `Added: ${addedDate.toLocaleTimeString([], { 
@@ -177,19 +176,28 @@ async function loadHistory() {
         const list = document.getElementById('solution-list');
         if (!list) return;
         
-        const escapeForAttribute = (str) => {
-            if (typeof str !== 'string') return ''; // Ensure it's a string
-            return str.replace(/'/g, "\\'")    // Escape single quotes for JS string literal in attribute
-                      .replace(/"/g, """)  // Escape double quotes for HTML attribute value
-                      .replace(/\n/g, "\\n")   // Escape newlines for JS string literal
-                      .replace(/\r/g, "\\r");   // Escape carriage returns for JS string literal
+        const escapeStringForJsInHtmlAttribute = (str) => {
+            if (typeof str !== 'string') {
+                return ''; // Return empty string for non-string types (like null/undefined)
+            }
+            return str
+                .replace(/\\/g, '\\\\') 
+                .replace(/'/g, "\\'")   
+                .replace(/\n/g, '\\n')  
+                .replace(/\r/g, '\\r')  
+                .replace(/"/g, '"') 
+                .replace(/&/g, '&')  
+                .replace(/</g, '<')   
+                .replace(/>/g, '>');  
         };
 
         list.innerHTML = pastSolutions
             .map(item => {
-                const addedDate = item.added_utc && item.added_utc !== 'null' && item.added_utc !== 'undefined' ? new Date(item.added_utc) : null;
+                // Ensure added_utc is a string or null before passing to new Date()
+                const addedUtcString = (typeof item.added_utc === 'string' && item.added_utc.trim() !== '') ? item.added_utc : null;
+                const addedDate = addedUtcString ? new Date(addedUtcString) : null;
                 let timeString = '';
-                if (addedDate && !isNaN(addedDate)) { // Check if date is valid
+                if (addedDate && !isNaN(addedDate)) { 
                      timeString = addedDate.toLocaleTimeString([], { 
                         hour: 'numeric', 
                         minute: '2-digit',
@@ -197,9 +205,11 @@ async function loadHistory() {
                     });
                 }
                 
-                const safeDate = escapeForAttribute(item.date);
-                const safeSolution = escapeForAttribute(item.solution);
-                const safeAddedUtc = escapeForAttribute(item.added_utc || '');
+                const safeDate = escapeStringForJsInHtmlAttribute(item.date);
+                const safeSolution = escapeStringForJsInHtmlAttribute(item.solution);
+                // Pass the original item.added_utc (which might be null) to the escaper.
+                // The escaper will return '' if it's null/undefined.
+                const safeAddedUtc = escapeStringForJsInHtmlAttribute(item.added_utc);
 
 
                 return `
@@ -210,7 +220,7 @@ async function loadHistory() {
                          tabindex="0" 
                          onkeypress="if(event.key==='Enter' || event.key===' ') { displayPuzzleOnBoard('${safeDate}', '${safeSolution}', '${safeAddedUtc}'); event.preventDefault(); }">
                         <div class="history-date" ${timeString ? `title="Added at ${timeString}"` : ''}>
-                            ${item.date}
+                            ${item.date} 
                         </div>
                         <div class="history-solution">
                             ${item.solution}
