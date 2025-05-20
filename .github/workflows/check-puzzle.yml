@@ -2,7 +2,7 @@ name: Puzzle Check
 on:
   workflow_dispatch:
   schedule:
-    - cron: '30 20 * * 1-5'
+    - cron: '30 20 * * 1-5' # Runs at 20:30 UTC (adjust as needed for ET)
 
 jobs:
   puzzle-check:
@@ -14,88 +14,100 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0
+        fetch-depth: 0 # Necessary for git diff and history
 
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.x' # Consider pinning to '3.11' or '3.12' for stability
+        python-version: '3.11' # Pinned to a specific stable version
 
     - name: Install dependencies
       run: pip install requests pytz
 
-    - name: Pull latest changes
+    - name: Pull latest changes # Ensure local branch is up-to-date before attempting script changes
       run: |
-        git config --global user.name "GitHub Actions"
-        git config --global user.email "actions@github.com"
+        git config --global user.name "GitHub Actions Bot"
+        git config --global user.email "actions-bot@users.noreply.github.com" # Or your preferred bot email
         git pull --ff-only
 
-    - name: Inject cache-buster
+    - name: Inject cache-buster versions into static files
       run: |
         TIMESTAMP=$(date +%s)
+        # Use a different sed delimiter if __VERSION__ might contain slashes, though unlikely here
         sed -i "s/__VERSION__/$TIMESTAMP/g" index.html
         sed -i "s/__VERSION__/$TIMESTAMP/g" style.css
         sed -i "s/__VERSION__/$TIMESTAMP/g" update.js
-        echo "Modified files:"
-        git diff
+        echo "Modified static files (for versioning):"
+        git diff --name-status index.html style.css update.js || echo "No changes to static files or files not found."
 
     - name: Check for solution updates
       env:
-        TZ: America/New_York
+        TZ: America/New_York # Sets timezone for the Python script if it relies on system TZ (though pytz handles it)
       id: check # This ID is used to set the output 'needs_commit'
       run: |
-        set +e
+        set +e # Do not exit immediately on error, let the script handle it
         
         for attempt in {1..360}; do
+          # Run Python script, redirect stdout to 'output' variable and stderr to 'warnings.log' file
           output=$(python -W ignore fetch_puzzle.py 2>warnings.log)
-          exit_code=$?
-          warnings=$(cat warnings.log)
+          exit_code=$? # Get the exit code of the Python script
+          warnings=$(cat warnings.log) # Get the content of stderr (warnings.log)
           
-          # This condition for checking warnings for "Updated:" seems less robust.
-          # The Python script's stdout and exit code 0 are the primary success indicators.
-          # Consider if this `if` block is still necessary or if it can be simplified
-          # now that the Python script handles its stdout/stderr more clearly.
+          # This specific check on `warnings` for "Updated:" is likely redundant now
+          # as the Python script should use stdout for "Updated:" and exit 0.
+          # Keeping it for now, but consider removing if Python script is fully reliable.
           if [[ "$warnings" == *"Updated:"* ]]; then
             echo "needs_commit=true" >> $GITHUB_OUTPUT
-            echo "✅ Update found via stderr (unexpected, check Python script logic)" # Added a note here
-            exit 0
+            echo "✅ Update found via stderr (unexpected path, review Python script's stdout/stderr logic)"
+            exit 0 # Exit this run script successfully
           fi
           
           case $exit_code in
-            0) # Python script exited with 0 (success, found update or no update needed)
+            0) # Python script exited with 0 (EXIT_CODE_SUCCESS)
               if [[ "$output" == *"Updated:"* ]]; then
-                echo "needs_commit=true" >> $GITHUB_OUTPUT # Set output for the next step
-                echo "✅ $output" # Log success with Python's stdout
-                exit 0 # Exit this script successfully
+                echo "needs_commit=true" >> $GITHUB_OUTPUT # Signal that a commit is needed
+                echo "✅ $output" # Log the success message from Python's stdout
+                exit 0 # Exit this run script successfully
               else
-                echo "ℹ️ $output" # Log info message (e.g., "already up-to-date")
-                exit 0 # Exit this script successfully
+                # Python script exited 0 but "Updated:" not in stdout.
+                # This means "Already up-to-date" or similar.
+                echo "ℹ️ $output" # Log the informational message from Python's stdout
+                exit 0 # Exit this run script successfully (no error, no update to commit)
               fi
               ;;
-            1) # Python script exited with 1 (retry needed)
-              if [ $attempt -eq 360 ]; then
-                echo "🟡 No update after 360 attempts"
-                exit 0 # Exit this script successfully (no error, just no update)
+            1) # Python script exited with 1 (EXIT_CODE_RETRY_NEEDED)
+              if [ $attempt -ge 360 ]; then # Use -ge (greater than or equal) for safety
+                echo "🟡 No update after $attempt attempts. Exiting."
+                exit 0 # Exit this run script successfully (no error, just max retries reached)
               fi
-              echo "⏳ Attempt $attempt/360 - Retrying..."
+              echo "⏳ Attempt $attempt/360: Python script signalled retry. Output: [$output]. Warnings: [$warnings]. Retrying in 60s..."
               sleep 60
               ;;
             *) # Python script exited with any other code (critical failure)
-              # --- MODIFICATION START ---
               echo "❌ Critical failure: Python script exited with code $exit_code on attempt $attempt."
               echo "--- Stderr from fetch_puzzle.py (captured in warnings.log) ---"
               echo "$warnings"
               echo "--- Stdout from fetch_puzzle.py (captured in output variable) ---"
               echo "$output"
-              # --- MODIFICATION END ---
-              exit 1 # Exit this script with an error, failing the GitHub Actions step
+              exit 1 # Exit this run script with an error, failing the GitHub Actions step
               ;;
           esac
         done
+        # If loop finishes without exiting (e.g. max retries reached and exit 0 inside loop),
+        # ensure a final exit status if needed, though current logic exits within the loop.
+        echo "Loop finished, check logic if this point is reached unexpectedly."
+        exit 0 # Default to success if loop completes (e.g. after max retries)
 
     - name: Commit and push changes
+      # Only run this step if the 'check' step set 'needs_commit' to 'true'
       if: ${{ steps.check.outputs.needs_commit == 'true' }}
       run: |
-        git add data.json past-solutions.json index.html style.css update.js # Added versioned files
-        git commit -m "Auto-update puzzle solution and version [skip ci]" # Updated commit message
-        git push
+        # Add all files that might have been changed: data, history, and versioned static files
+        git add data.json past-solutions.json index.html style.css update.js
+        # Check if there are any changes staged for commit
+        if git diff --staged --quiet; then
+          echo "No changes to commit."
+        else
+          git commit -m "Auto-update puzzle solution and versions [skip ci]"
+          git push
+        fi
