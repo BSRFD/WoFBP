@@ -12,21 +12,20 @@ function shuffleArray(array) {
 // --- FUNCTION to display any puzzle on the board ---
 function displayPuzzleOnBoard(dateStr, solutionStr, addedUtcStr) {
     const dateElement = document.getElementById('date');
-    const solutionElement = document.getElementById('solution'); // Get the original element
+    const solutionElementOriginal = document.getElementById('solution'); // Get the original element
     
     if (dateElement) dateElement.textContent = dateStr;
-    if (solutionElement) solutionElement.textContent = solutionStr;
-
-    // Update click-to-copy for the new solution
-    // To properly manage event listeners, it's best to replace the element or remove/add listeners.
-    // Cloning and replacing is a straightforward way.
-    if (solutionElement) {
-        const newSolutionElement = solutionElement.cloneNode(true); // Clone to remove old listeners
-        newSolutionElement.textContent = solutionStr; // Ensure text content is set on the clone
+    
+    // Recreate or update solutionElement to handle event listeners correctly
+    if (solutionElementOriginal) {
+        const newSolutionElement = solutionElementOriginal.cloneNode(false); // Clone structure, not deep children
+        newSolutionElement.textContent = solutionStr; // Set the text content
+        newSolutionElement.id = 'solution'; // Ensure ID is maintained
+        newSolutionElement.className = 'info-value'; // Ensure class is maintained
         newSolutionElement.style.cursor = 'pointer';
         newSolutionElement.setAttribute('title', 'Click to copy');
         
-        solutionElement.parentNode.replaceChild(newSolutionElement, solutionElement); // Replace old with new
+        solutionElementOriginal.parentNode.replaceChild(newSolutionElement, solutionElementOriginal); // Replace old with new
     
         newSolutionElement.addEventListener('click', async () => {
             try {
@@ -41,13 +40,13 @@ function displayPuzzleOnBoard(dateStr, solutionStr, addedUtcStr) {
 
 
     const puzzleDisplay = document.getElementById('puzzle-display');
-    if (!puzzleDisplay) return; // Guard if element doesn't exist
+    if (!puzzleDisplay) return; 
 
-    puzzleDisplay.innerHTML = ''; // Clear previous puzzle
+    puzzleDisplay.innerHTML = ''; 
     
-    const addedDate = addedUtcStr ? new Date(addedUtcStr) : null;
+    const addedDate = addedUtcStr && addedUtcStr !== 'null' && addedUtcStr !== 'undefined' ? new Date(addedUtcStr) : null;
     let timeContainer = null;
-    if (addedDate) {
+    if (addedDate && !isNaN(addedDate)) { // Check if date is valid
         timeContainer = document.createElement('div');
         timeContainer.className = 'puzzle-timestamp';
         timeContainer.textContent = `Added: ${addedDate.toLocaleTimeString([], { 
@@ -64,7 +63,7 @@ function displayPuzzleOnBoard(dateStr, solutionStr, addedUtcStr) {
     const allTiles = [];
     const words = solutionStr.split(/\s+/);
     
-    const MAX_CHARS_PER_LINE = 14; // Adjust this (e.g., 12-14) for best visual fit
+    const MAX_CHARS_PER_LINE = 14; 
     let currentLineElement = null;
     let currentLineCharCount = 0;
 
@@ -97,11 +96,10 @@ function displayPuzzleOnBoard(dateStr, solutionStr, addedUtcStr) {
         currentLineCharCount += wordLength;
     });
 
-    if (timeContainer) { // Append timestamp after puzzle, relying on absolute CSS positioning
+    if (timeContainer) { 
          puzzleDisplay.appendChild(timeContainer);
     }
 
-    // Shuffle and reveal only actual letter tiles
     shuffleArray(allTiles); 
     allTiles.forEach((tile, index) => {
         setTimeout(() => {
@@ -109,7 +107,6 @@ function displayPuzzleOnBoard(dateStr, solutionStr, addedUtcStr) {
         }, index * 50); 
     });
 
-    // Scroll to the top to see the newly displayed puzzle
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 // --- END NEW FUNCTION ---
@@ -123,19 +120,16 @@ async function fetchData() {
         }
         const data = await response.json();
         
-        // Use the new function to display the fetched current puzzle
         displayPuzzleOnBoard(data.date, data.solution, data.added_utc);
 
-        // Auto-refresh check every 5 minutes
         if (Date.now() - lastUpdateCheck > 300000) { 
             const freshCheck = await fetch(`data.json?rand=${Date.now()}`);
-            if (!freshCheck.ok) { // Check if fresh check also failed
+            if (!freshCheck.ok) { 
                 console.warn(`Auto-refresh check failed: ${freshCheck.status}`);
-                lastUpdateCheck = Date.now(); // Update check time anyway to prevent rapid retries on persistent error
+                lastUpdateCheck = Date.now(); 
                 return;
             }
             const freshData = await freshCheck.json();
-            // If current puzzle data changed, reload the page to fetch and display it
             if (freshData.date !== data.date || freshData.solution !== data.solution) { 
                 window.location.reload(true);
             }
@@ -149,7 +143,7 @@ async function fetchData() {
         const dateElement = document.getElementById('date');
         const solutionElement = document.getElementById('solution');
         if(dateElement) dateElement.textContent = "Error";
-        if(solutionElement) solutionElement.textContent = "Error";
+        if(solutionElement) solutionElement.textContent = "Error loading";
     }
 }
 
@@ -183,21 +177,30 @@ async function loadHistory() {
         const list = document.getElementById('solution-list');
         if (!list) return;
         
+        const escapeForAttribute = (str) => {
+            if (typeof str !== 'string') return ''; // Ensure it's a string
+            return str.replace(/'/g, "\\'")    // Escape single quotes for JS string literal in attribute
+                      .replace(/"/g, """)  // Escape double quotes for HTML attribute value
+                      .replace(/\n/g, "\\n")   // Escape newlines for JS string literal
+                      .replace(/\r/g, "\\r");   // Escape carriage returns for JS string literal
+        };
+
         list.innerHTML = pastSolutions
             .map(item => {
-                const addedDate = item.added_utc ? new Date(item.added_utc) : null;
-                const timeString = addedDate ? 
-                    addedDate.toLocaleTimeString([], { 
+                const addedDate = item.added_utc && item.added_utc !== 'null' && item.added_utc !== 'undefined' ? new Date(item.added_utc) : null;
+                let timeString = '';
+                if (addedDate && !isNaN(addedDate)) { // Check if date is valid
+                     timeString = addedDate.toLocaleTimeString([], { 
                         hour: 'numeric', 
                         minute: '2-digit',
                         hour12: true 
-                    }) : '';
+                    });
+                }
                 
-                // Escape quotes in item data for use in inline JS
-                const safeDate = item.date.replace(/'/g, "\\'").replace(/"/g, """);
-                const safeSolution = item.solution.replace(/'/g, "\\'").replace(/"/g, """);
-                // For addedUtcStr, it's better to pass it as is if it's a valid ISO string or null/empty
-                const safeAddedUtc = item.added_utc || ''; // Pass empty string if null/undefined
+                const safeDate = escapeForAttribute(item.date);
+                const safeSolution = escapeForAttribute(item.solution);
+                const safeAddedUtc = escapeForAttribute(item.added_utc || '');
+
 
                 return `
                     <div class="history-solution-item" 
