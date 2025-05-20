@@ -9,33 +9,40 @@ function shuffleArray(array) {
     }
 }
 
-// --- NEW FUNCTION to display any puzzle on the board ---
+// --- FUNCTION to display any puzzle on the board ---
 function displayPuzzleOnBoard(dateStr, solutionStr, addedUtcStr) {
     const dateElement = document.getElementById('date');
-    const solutionElement = document.getElementById('solution');
+    const solutionElement = document.getElementById('solution'); // Get the original element
     
-    dateElement.textContent = dateStr;
-    solutionElement.textContent = solutionStr;
+    if (dateElement) dateElement.textContent = dateStr;
+    if (solutionElement) solutionElement.textContent = solutionStr;
 
     // Update click-to-copy for the new solution
-    solutionElement.style.cursor = 'pointer';
-    solutionElement.setAttribute('title', 'Click to copy');
-    // Remove old event listener to prevent multiple listeners if any
-    const newSolutionElement = solutionElement.cloneNode(true);
-    solutionElement.parentNode.replaceChild(newSolutionElement, solutionElement);
+    // To properly manage event listeners, it's best to replace the element or remove/add listeners.
+    // Cloning and replacing is a straightforward way.
+    if (solutionElement) {
+        const newSolutionElement = solutionElement.cloneNode(true); // Clone to remove old listeners
+        newSolutionElement.textContent = solutionStr; // Ensure text content is set on the clone
+        newSolutionElement.style.cursor = 'pointer';
+        newSolutionElement.setAttribute('title', 'Click to copy');
+        
+        solutionElement.parentNode.replaceChild(newSolutionElement, solutionElement); // Replace old with new
     
-    newSolutionElement.addEventListener('click', async () => {
-        try {
-            await navigator.clipboard.writeText(solutionStr);
-            showCopyFeedback('Copied to clipboard!');
-        } catch (err) {
-            console.error('Failed to copy:', err);
-            showCopyFeedback('Failed to copy!');
-        }
-    });
+        newSolutionElement.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(solutionStr);
+                showCopyFeedback('Copied to clipboard!');
+            } catch (err) {
+                console.error('Failed to copy:', err);
+                showCopyFeedback('Failed to copy!');
+            }
+        });
+    }
 
 
     const puzzleDisplay = document.getElementById('puzzle-display');
+    if (!puzzleDisplay) return; // Guard if element doesn't exist
+
     puzzleDisplay.innerHTML = ''; // Clear previous puzzle
     
     const addedDate = addedUtcStr ? new Date(addedUtcStr) : null;
@@ -57,7 +64,7 @@ function displayPuzzleOnBoard(dateStr, solutionStr, addedUtcStr) {
     const allTiles = [];
     const words = solutionStr.split(/\s+/);
     
-    const MAX_CHARS_PER_LINE = 14; 
+    const MAX_CHARS_PER_LINE = 14; // Adjust this (e.g., 12-14) for best visual fit
     let currentLineElement = null;
     let currentLineCharCount = 0;
 
@@ -90,10 +97,11 @@ function displayPuzzleOnBoard(dateStr, solutionStr, addedUtcStr) {
         currentLineCharCount += wordLength;
     });
 
-    if (timeContainer) {
+    if (timeContainer) { // Append timestamp after puzzle, relying on absolute CSS positioning
          puzzleDisplay.appendChild(timeContainer);
     }
 
+    // Shuffle and reveal only actual letter tiles
     shuffleArray(allTiles); 
     allTiles.forEach((tile, index) => {
         setTimeout(() => {
@@ -110,6 +118,9 @@ function displayPuzzleOnBoard(dateStr, solutionStr, addedUtcStr) {
 async function fetchData() {
     try {
         const response = await fetch(`data.json?rand=${Date.now()}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const data = await response.json();
         
         // Use the new function to display the fetched current puzzle
@@ -118,6 +129,11 @@ async function fetchData() {
         // Auto-refresh check every 5 minutes
         if (Date.now() - lastUpdateCheck > 300000) { 
             const freshCheck = await fetch(`data.json?rand=${Date.now()}`);
+            if (!freshCheck.ok) { // Check if fresh check also failed
+                console.warn(`Auto-refresh check failed: ${freshCheck.status}`);
+                lastUpdateCheck = Date.now(); // Update check time anyway to prevent rapid retries on persistent error
+                return;
+            }
             const freshData = await freshCheck.json();
             // If current puzzle data changed, reload the page to fetch and display it
             if (freshData.date !== data.date || freshData.solution !== data.solution) { 
@@ -125,18 +141,15 @@ async function fetchData() {
             }
             lastUpdateCheck = Date.now();
         }
-        // Note: Click-to-copy is now handled within displayPuzzleOnBoard
 
     } catch (error) {
         console.error('Error fetching or displaying current data:', error);
         const puzzleDisplay = document.getElementById('puzzle-display');
-        if(puzzleDisplay) puzzleDisplay.textContent = "Could not load current puzzle. Please try again later.";
-        // Also update info panel for consistency
+        if(puzzleDisplay) puzzleDisplay.innerHTML = "<p style='text-align:center; color: var(--gold); padding-top: 20px;'>Could not load current puzzle. Please try again later.</p>";
         const dateElement = document.getElementById('date');
         const solutionElement = document.getElementById('solution');
         if(dateElement) dateElement.textContent = "Error";
         if(solutionElement) solutionElement.textContent = "Error";
-
     }
 }
 
@@ -163,8 +176,12 @@ function showCopyFeedback(message) {
 async function loadHistory() {
     try {
         const response = await fetch(`past-solutions.json?rand=${Date.now()}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const pastSolutions = await response.json();
         const list = document.getElementById('solution-list');
+        if (!list) return;
         
         list.innerHTML = pastSolutions
             .map(item => {
@@ -177,9 +194,10 @@ async function loadHistory() {
                     }) : '';
                 
                 // Escape quotes in item data for use in inline JS
-                const safeDate = item.date.replace(/'/g, "\\'");
-                const safeSolution = item.solution.replace(/'/g, "\\'");
-                const safeAddedUtc = item.added_utc ? item.added_utc.replace(/'/g, "\\'") : '';
+                const safeDate = item.date.replace(/'/g, "\\'").replace(/"/g, """);
+                const safeSolution = item.solution.replace(/'/g, "\\'").replace(/"/g, """);
+                // For addedUtcStr, it's better to pass it as is if it's a valid ISO string or null/empty
+                const safeAddedUtc = item.added_utc || ''; // Pass empty string if null/undefined
 
                 return `
                     <div class="history-solution-item" 
@@ -209,6 +227,7 @@ async function loadHistory() {
 function toggleHistory() {
     const content = document.getElementById('history-content');
     const arrow = document.querySelector('.dropdown-arrow');
+    if (!content || !arrow) return;
     
     content.classList.toggle('visible');
     arrow.style.transform = content.classList.contains('visible') 
