@@ -19,7 +19,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: '3.x'
+        python-version: '3.x' # Consider pinning to '3.11' or '3.12' for stability
 
     - name: Install dependencies
       run: pip install requests pytz
@@ -42,7 +42,7 @@ jobs:
     - name: Check for solution updates
       env:
         TZ: America/New_York
-      id: check
+      id: check # This ID is used to set the output 'needs_commit'
       run: |
         set +e
         
@@ -51,35 +51,44 @@ jobs:
           exit_code=$?
           warnings=$(cat warnings.log)
           
+          # This condition for checking warnings for "Updated:" seems less robust.
+          # The Python script's stdout and exit code 0 are the primary success indicators.
+          # Consider if this `if` block is still necessary or if it can be simplified
+          # now that the Python script handles its stdout/stderr more clearly.
           if [[ "$warnings" == *"Updated:"* ]]; then
             echo "needs_commit=true" >> $GITHUB_OUTPUT
-            echo "✅ Update found"
+            echo "✅ Update found via stderr (unexpected, check Python script logic)" # Added a note here
             exit 0
           fi
           
           case $exit_code in
-            0)
+            0) # Python script exited with 0 (success, found update or no update needed)
               if [[ "$output" == *"Updated:"* ]]; then
-                echo "needs_commit=true" >> $GITHUB_OUTPUT
-                echo "✅ $output"
-                exit 0
+                echo "needs_commit=true" >> $GITHUB_OUTPUT # Set output for the next step
+                echo "✅ $output" # Log success with Python's stdout
+                exit 0 # Exit this script successfully
               else
-                echo "ℹ️ $output"
-                exit 0
+                echo "ℹ️ $output" # Log info message (e.g., "already up-to-date")
+                exit 0 # Exit this script successfully
               fi
               ;;
-            1)
+            1) # Python script exited with 1 (retry needed)
               if [ $attempt -eq 360 ]; then
                 echo "🟡 No update after 360 attempts"
-                exit 0
+                exit 0 # Exit this script successfully (no error, just no update)
               fi
               echo "⏳ Attempt $attempt/360 - Retrying..."
               sleep 60
               ;;
-            *)
-              echo "❌ Critical failure:"
+            *) # Python script exited with any other code (critical failure)
+              # --- MODIFICATION START ---
+              echo "❌ Critical failure: Python script exited with code $exit_code on attempt $attempt."
+              echo "--- Stderr from fetch_puzzle.py (captured in warnings.log) ---"
               echo "$warnings"
-              exit 1
+              echo "--- Stdout from fetch_puzzle.py (captured in output variable) ---"
+              echo "$output"
+              # --- MODIFICATION END ---
+              exit 1 # Exit this script with an error, failing the GitHub Actions step
               ;;
           esac
         done
@@ -87,6 +96,6 @@ jobs:
     - name: Commit and push changes
       if: ${{ steps.check.outputs.needs_commit == 'true' }}
       run: |
-        git add data.json past-solutions.json
-        git commit -m "Auto-update puzzle solution [skip ci]"
+        git add data.json past-solutions.json index.html style.css update.js # Added versioned files
+        git commit -m "Auto-update puzzle solution and version [skip ci]" # Updated commit message
         git push
