@@ -53,15 +53,6 @@ jobs:
           exit_code=$? # Get the exit code of the Python script
           warnings=$(cat warnings.log) # Get the content of stderr (warnings.log)
           
-          # This specific check on `warnings` for "Updated:" is likely redundant now
-          # as the Python script should use stdout for "Updated:" and exit 0.
-          # Keeping it for now, but consider removing if Python script is fully reliable.
-          if [[ "$warnings" == *"Updated:"* ]]; then
-            echo "needs_commit=true" >> $GITHUB_OUTPUT
-            echo "✅ Update found via stderr (unexpected path, review Python script's stdout/stderr logic)"
-            exit 0 # Exit this run script successfully
-          fi
-          
           case $exit_code in
             0) # Python script exited with 0 (EXIT_CODE_SUCCESS)
               if [[ "$output" == *"Updated:"* ]]; then
