@@ -125,7 +125,6 @@ async function loadHistory() {
         const list = document.getElementById('solution-list');
         
         list.innerHTML = pastSolutions
-            .reverse()
             .map(item => {
                 const addedDate = item.added_utc ? new Date(item.added_utc) : null;
                 const timeString = addedDate ? 
