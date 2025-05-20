@@ -48,51 +48,51 @@ h1 {
     width: 90%;
     max-width: 800px;
     min-width: 300px;
-    overflow-x: auto; /* In case a very long single word still overflows MAX_CHARS_PER_LINE */
+    overflow-x: auto; 
     box-shadow: 0 0 30px rgba(0,0,0,0.5);
     box-sizing: border-box;
-    position: relative; /* For absolute positioning of .puzzle-timestamp */
+    position: relative; 
 }
 
 .puzzle-display {
-    display: flex; /* Changed from flex-wrap to simple flex for word-container */
-    flex-direction: column; /* Stack word-container and timestamp */
-    gap: 10px; /* Gap between word-container and timestamp if both are direct children */
+    display: flex; 
+    flex-direction: column; 
+    gap: 10px; 
     justify-content: center;
-    align-items: center; /* Center the word-container */
+    align-items: center; 
     padding: 10px;
-    min-height: 120px;
+    min-height: 120px; /* Ensure it has some height even when empty/loading */
     width: 100%;
     box-sizing: border-box;
 }
 
 .word-container {
     display: flex;
-    flex-direction: column; /* Each .word-row is a new line */
-    align-items: center; /* Center each .word-row */
-    gap: 15px; /* Vertical gap between lines of words */
-    width: 100%; /* Take full width to allow centering of its children */
+    flex-direction: column; 
+    align-items: center; 
+    gap: 15px; 
+    width: 100%; 
 }
 
 .word-row {
     display: flex;
-    justify-content: center; /* Center tiles within this row */
-    gap: 5px; /* Horizontal gap between tiles */
-    flex-wrap: nowrap; /* Prevent tiles from wrapping within a single conceptual line */
+    justify-content: center; 
+    gap: 5px; 
+    flex-wrap: nowrap; 
 }
 
 .letter-tile {
-    background: var(--dark-blue); /* Background for unrevealed tiles */
+    background: var(--dark-blue); 
     border: 2px solid var(--gold);
     border-radius: 5px;
-    color: transparent; /* Text color for unrevealed tiles */
+    color: transparent; 
     font-size: 2em;
     font-weight: bold;
     text-align: center;
     padding: 15px;
-    min-width: 50px; /* Fixed width */
-    max-width: 50px; /* Fixed width */
-    height: 60px;    /* Fixed height */
+    min-width: 50px; 
+    max-width: 50px; 
+    height: 60px;    
     display: flex;
     align-items: center;
     justify-content: center;
@@ -101,7 +101,7 @@ h1 {
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
-    user-select: none; /* Prevent text selection during reveal */
+    user-select: none; 
 }
 
 .letter-tile::after {
@@ -117,8 +117,8 @@ h1 {
 }
 
 .letter-tile.revealed {
-    color: white; /* Text color for revealed tiles */
-    background: var(--light-blue); /* Background for revealed tiles */
+    color: white; 
+    background: var(--light-blue); 
 }
 
 .letter-tile.revealed::after {
@@ -132,23 +132,19 @@ h1 {
     100% { opacity: 0; }
 }
 
-/* Styles for space tiles */
 .space-tile {
     background: transparent !important;
     border-color: transparent !important;
     color: transparent !important;
-    /* It will inherit min-width, max-width, height, padding, margin from .letter-tile,
-       effectively creating an invisible tile that takes up space. */
 }
-.space-tile.revealed { /* Ensure revealed spaces are also transparent */
+.space-tile.revealed { 
     background: transparent !important;
     border-color: transparent !important;
     color: transparent !important;
 }
-.space-tile::after { /* Disable flash animation for space tiles */
+.space-tile::after { 
     display: none !important;
 }
-
 
 .info-panel {
     background: rgba(0,0,0,0.7);
@@ -181,7 +177,7 @@ h1 {
     font-family: 'Roboto Condensed', sans-serif;
 }
 
-#solution {
+#solution { /* This is the span holding the solution text, not the tiles */
     position: relative;
     display: inline-block;
     padding-right: 25px;
@@ -257,7 +253,7 @@ h1 {
 }
 
 .history-header:hover {
-    background: #000060; /* Slightly lighter blue on hover */
+    background: #000060; 
 }
 
 .history-header span {
@@ -300,20 +296,25 @@ h1 {
     margin: 10px 0;
     background: rgba(255,255,255,0.05);
     border-radius: 5px;
+    cursor: pointer; 
+    transition: background-color 0.2s ease-in-out; 
 }
+
+.history-solution-item:hover,
+.history-solution-item:focus { 
+    background: rgba(255,255,255,0.1); 
+    outline: 2px solid var(--gold); /* Example focus style */
+}
+
 
 .history-date {
     color: var(--gold);
     font-family: 'Passion One', cursive;
     font-size: 1.4em;
-    width: 45%; /* Adjust if needed */
-    cursor: help;
+    width: 45%; 
     border-bottom: 1px dotted rgba(255,255,255,0.3);
     transition: color 0.2s ease;
-}
-
-.history-date:hover {
-    color: #ffec8b; /* Lighter gold on hover */
+    pointer-events: none; 
 }
 
 .history-solution {
@@ -321,8 +322,9 @@ h1 {
     font-family: 'Roboto Condensed', sans-serif;
     font-size: 1.4em;
     font-weight: bold;
-    width: 55%; /* Adjust if needed */
+    width: 55%; 
     text-align: right;
+    pointer-events: none; 
 }
 
 .puzzle-timestamp {
@@ -332,7 +334,7 @@ h1 {
     color: rgba(255,255,255,0.7);
     font-size: 0.9em;
     font-style: italic;
-    z-index: 1; /* Ensure it's above background but below potential popups */
+    z-index: 1; 
 }
 
 @media (max-width: 600px) {
@@ -346,16 +348,16 @@ h1 {
     }
     
     .letter-tile {
-        min-width: 30px; /* Adjust for smaller screens */
+        min-width: 30px; 
         max-width: 30px;
-        height: auto; /* Allow height to adjust with padding and font size */
-        font-size: 1.2em; /* Smaller font on small screens */
-        padding: 8px;
+        height: auto; 
+        font-size: 1.1em; /* Adjusted for better fit */
+        padding: 6px;   /* Adjusted for better fit */
     }
     
     .history-header span {
         font-size: 1.2em;
-        padding-right: 30px; /* Space for arrow */
+        padding-right: 30px; 
     }
     
     .dropdown-arrow {
@@ -366,7 +368,7 @@ h1 {
     
     .history-date,
     .history-solution {
-        font-size: 1.2em;
+        font-size: 1.1em; /* Adjusted for consistency */
     }
 
     .puzzle-timestamp {
