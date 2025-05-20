@@ -24,6 +24,11 @@ EXIT_CODE_ARCHIVE_ERROR = 7
 EXIT_CODE_CRITICAL_ERROR = 8    # General unhandled in main
 EXIT_CODE_FUTURE_DATE_ERROR = 9 # API date is in the future
 
+# Standard browser User-Agent
+REQUEST_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+}
+
 def parse_solution(raw_solution):
     """Clean and format the solution string"""
     return ' '.join(
@@ -42,7 +47,6 @@ def parse_api_date(api_date_str):
         dt = datetime.strptime(api_date_str, '%b %d, %Y')
         return dt.strftime('%Y-%m-%d')
     except ValueError as e:
-        # This error is critical for parsing, it will be caught by the ValueError handler in fetch_api_data
         raise ValueError(f"Invalid API date format for input '{api_date_str}'. Original error: {e}")
 
 
@@ -61,54 +65,61 @@ def get_current_data():
 
 def fetch_api_data():
     """Fetch and parse API data with cache busting and improved error handling"""
-    response_obj = None # Initialize for access in json_err block
+    response_obj = None
     try:
-        print(f"DEBUG: Fetching API data from {API_URL} with cache_buster={time.time()}", file=sys.stderr)
+        cache_buster_value = time.time()
+        print(f"DEBUG: Fetching API data from {API_URL} with cache_buster={cache_buster_value}", file=sys.stderr)
+        print(f"DEBUG: Using headers: {json.dumps(REQUEST_HEADERS)}", file=sys.stderr)
+
         response_obj = requests.get(
             API_URL,
-            params={'cache_buster': time.time()},
-            timeout=15
+            params={'cache_buster': cache_buster_value},
+            timeout=15,
+            headers=REQUEST_HEADERS # MODIFICATION: Added User-Agent header
         )
-        response_obj.raise_for_status() # Raises HTTPError for 4xx/5xx status codes
-        data = response_obj.json()    # Raises JSONDecodeError if response is not valid JSON
-        print(f"DEBUG: Raw API response (first 500 chars): {str(data)[:500]}", file=sys.stderr)
+        response_obj.raise_for_status()
+        
+        # Attempt to decode JSON, log raw text on failure for better debugging
+        try:
+            data = response_obj.json()
+        except json.JSONDecodeError as json_decode_err:
+            print(f"DEBUG: JSONDecodeError occurred. Raw response text (first 2000 chars) that caused error:\n{response_obj.text[:2000]}", file=sys.stderr)
+            raise json_decode_err # Re-raise the original error to be caught by the outer handler
+
+        print(f"DEBUG: Raw API response JSON parsed. Top-level keys: {list(data.keys()) if isinstance(data, dict) else 'Not a dict'}", file=sys.stderr)
+        # print(f"DEBUG: Full raw API response data (might be very long, first 2000 chars for safety):\n{str(data)[:2000]}", file=sys.stderr)
 
 
         for component in data.get('components', []):
             if component.get('componentName') == 'bonusPuzzle':
                 puzzle_data = component.get('data', {})
-                # ---- START ADDED DEBUGGING ----
                 print(f"DEBUG: Found 'bonusPuzzle' component. Raw puzzle_data content: {json.dumps(puzzle_data)}", file=sys.stderr)
-                # ---- END ADDED DEBUGGING ----
 
-                api_date_str = puzzle_data.get('date', '')       # Default to empty string if 'date' key is missing
-                api_solution_str = puzzle_data.get('solution', '') # Default to empty string
-
-                # ---- START ADDED DEBUGGING ----
+                api_date_str = puzzle_data.get('date', '')
+                api_solution_str = puzzle_data.get('solution', '')
                 print(f"DEBUG: Extracted api_date_str='{api_date_str}', api_solution_str='{api_solution_str}'", file=sys.stderr)
-                # ---- END ADDED DEBUGGING ----
 
-                if not api_date_str: # Check if the date string from API is empty
+                if not api_date_str:
                     if not api_solution_str:
-                        # Both date and solution are empty - most likely puzzle not yet available
-                        print("API Info: Both date and solution are empty from API. Assuming no puzzle available yet.", file=sys.stderr)
+                        print("API Info: Both date and solution are effectively empty from API (keys might be missing or values are empty). Assuming no puzzle available yet.", file=sys.stderr)
+                        # MODIFICATION: Log more of the response when this specific condition is met
+                        print(f"DEBUG: Full response text when date/solution were empty in puzzle_data (first 2000 chars of response_obj.text):\n{response_obj.text[:2000]}", file=sys.stderr)
                         sys.exit(EXIT_CODE_RETRY_NEEDED)
                     else:
-                        # Date is empty but solution is not - this is unexpected/inconsistent data
                         print("API Data Inconsistency: API returned an empty date string but a non-empty solution.", file=sys.stderr)
                         sys.exit(EXIT_CODE_PARSING_ERROR)
 
-                # If we reach here, api_date_str was not empty.
-                parsed_date = parse_api_date(api_date_str) # Can raise ValueError if format is wrong despite not being empty
-                parsed_solution = parse_solution(api_solution_str) # Should be safe even if solution_str is empty
+                parsed_date = parse_api_date(api_date_str)
+                parsed_solution = parse_solution(api_solution_str)
 
                 return {
                     'solution': parsed_solution,
                     'date': parsed_date
                 }
-        # If loop completes without returning, bonusPuzzle component or its data was not found
-        print("DEBUG: 'bonusPuzzle' component or its 'data' key was not found in the API response structure.", file=sys.stderr)
-        raise ValueError("Bonus puzzle data structure not found in API response.")
+        
+        print("DEBUG: 'bonusPuzzle' component or its 'data' key was not found or was structured unexpectedly in the API response.", file=sys.stderr)
+        print(f"DEBUG: Full response text when 'bonusPuzzle' data structure was not found (first 2000 chars of response_obj.text):\n{response_obj.text[:2000]}", file=sys.stderr)
+        raise ValueError("Bonus puzzle data structure not found or incomplete in API response.")
 
     except requests.exceptions.HTTPError as http_err:
         print(f"API HTTP Error: {http_err}", file=sys.stderr)
@@ -122,20 +133,21 @@ def fetch_api_data():
     except requests.exceptions.ConnectionError as conn_err:
         print(f"API Connection Error: {conn_err}", file=sys.stderr)
         sys.exit(EXIT_CODE_NETWORK_ERROR)
-    except requests.exceptions.RequestException as req_err: # Catch other request-related errors
+    except requests.exceptions.RequestException as req_err:
         print(f"API Request Error: {req_err}", file=sys.stderr)
         sys.exit(EXIT_CODE_API_ERROR)
-    except json.JSONDecodeError as json_err:
+    except json.JSONDecodeError as json_err: # This will now catch the re-raised error too
         print(f"API JSON Decode Error: {json_err}", file=sys.stderr)
-        if response_obj is not None:
-            print(f"Response Text (first 500 chars that caused error): {response_obj.text[:500]}", file=sys.stderr)
+        # response_obj might be None if error happened before request, but usually available
+        if response_obj and hasattr(response_obj, 'text'):
+            print(f"Response Text (first 500 chars that might have caused error): {response_obj.text[:500]}", file=sys.stderr)
         else:
-            print("Response object was not available for inspection.", file=sys.stderr)
+            print("Response object or its text was not available for inspection.", file=sys.stderr)
         sys.exit(EXIT_CODE_JSON_ERROR)
-    except ValueError as val_err: # Catches ValueErrors from parse_api_date or custom ones like "Bonus puzzle data structure not found"
+    except ValueError as val_err:
         print(f"API Data Parsing/Integrity Error: {val_err}", file=sys.stderr)
         sys.exit(EXIT_CODE_PARSING_ERROR)
-    except Exception as e: # Generic fallback for unexpected errors within this function
+    except Exception as e:
         print(f"Unexpected Error in fetch_api_data: {str(e)}", file=sys.stderr)
         traceback.print_exc(file=sys.stderr)
         sys.exit(EXIT_CODE_API_ERROR)
@@ -143,7 +155,7 @@ def fetch_api_data():
 def archive_current_solution(current_solution, current_date):
     """Archive previous solutions"""
     try:
-        if not current_solution and not current_date: # Nothing to archive if both are empty
+        if not current_solution and not current_date:
             print("Archive Info: Nothing to archive (current solution and date are empty).", file=sys.stdout)
             return
 
@@ -152,7 +164,7 @@ def archive_current_solution(current_solution, current_date):
             with open(HISTORY_FILE, 'r') as f:
                 try:
                     history = json.load(f)
-                    if not isinstance(history, list): # Ensure history is a list
+                    if not isinstance(history, list):
                         print(f"Archive Warning: {HISTORY_FILE} did not contain a list. Reinitializing.", file=sys.stderr)
                         history = []
                 except json.JSONDecodeError as e:
@@ -160,24 +172,21 @@ def archive_current_solution(current_solution, current_date):
                     history = []
 
         entry = {
-            "date": current_date, # Assumed to be valid if passed here
+            "date": current_date,
             "solution": current_solution,
             "added_utc": datetime.now(timezone.utc).isoformat()
         }
 
-        # Avoid duplicate entries for the same date
         if not any(e.get('date') == current_date for e in history):
             history.append(entry)
-            # Sort by date descending to easily manage the size limit
             history.sort(key=lambda x: x.get('date', ''), reverse=True)
-            history = history[:365] # Keep the most recent 365 entries
+            history = history[:365]
 
             with open(HISTORY_FILE, 'w') as f:
                 json.dump(history, f, indent=2)
             print(f"Archive Info: Archived solution for {current_date}.", file=sys.stdout)
         else:
             print(f"Archive Info: Entry for date {current_date} already exists. Not re-archiving.", file=sys.stdout)
-
 
     except Exception as e:
         print(f"Error during archiving: {str(e)}", file=sys.stderr)
@@ -191,13 +200,10 @@ def main():
         stored_data = get_current_data()
         print(f"DEBUG: Stored data: {stored_data}", file=sys.stderr)
 
-
-        # fetch_api_data will sys.exit on its own if there's an issue
         api_data = fetch_api_data()
-        api_date = api_data['date']         # This comes from parsed_date
-        api_solution = api_data['solution'] # This comes from parsed_solution
-        print(f"DEBUG: API data received: date='{api_date}', solution='{api_solution}'", file=sys.stderr)
-
+        api_date = api_data['date']
+        api_solution = api_data['solution']
+        print(f"DEBUG: API data received and parsed: date='{api_date}', solution='{api_solution}'", file=sys.stderr)
 
         if api_date > today:
             print(f"API Error: API date {api_date} is in the future (today: {today}). This is unexpected.", file=sys.stderr)
@@ -207,9 +213,7 @@ def main():
                 print(f"Already up-to-date for {today} with solution: {api_solution}")
                 sys.exit(EXIT_CODE_SUCCESS)
             else:
-                # Archive the old stored data only if its date is different from today's API date
-                # and if there was actually old data.
-                if stored_data.get('date') and stored_data.get('date') != api_date:
+                if stored_data.get('date') and stored_data.get('date') != api_date: # Only archive if dates differ
                     print(f"DEBUG: Archiving old stored data: date='{stored_data.get('date')}', solution='{stored_data.get('solution')}'", file=sys.stderr)
                     archive_current_solution(
                         stored_data.get('solution'),
@@ -222,8 +226,7 @@ def main():
                         "solution": api_solution,
                         "added_utc": datetime.now(timezone.utc).isoformat()
                     }, f, indent=2)
-
-                print(f"Updated: {api_date} - {api_solution}") # Expected by bash script for commit
+                print(f"Updated: {api_date} - {api_solution}")
                 sys.exit(EXIT_CODE_SUCCESS)
         else: # api_date < today
             print(f"API data is for {api_date}, which is older than today ({today}). Retrying is appropriate.")
