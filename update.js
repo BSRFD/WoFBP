@@ -62,7 +62,7 @@ function displayPuzzleOnBoard(dateStr, solutionStr, addedUtcStr) {
     const allTiles = [];
     const words = solutionStr.split(/\s+/);
     
-    const MAX_CHARS_PER_LINE = 14; 
+    const MAX_CHARS_PER_LINE = 13; 
     let currentLineElement = null;
     let currentLineCharCount = 0;
 
