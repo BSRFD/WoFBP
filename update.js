@@ -9,118 +9,134 @@ function shuffleArray(array) {
     }
 }
 
+// --- NEW FUNCTION to display any puzzle on the board ---
+function displayPuzzleOnBoard(dateStr, solutionStr, addedUtcStr) {
+    const dateElement = document.getElementById('date');
+    const solutionElement = document.getElementById('solution');
+    
+    dateElement.textContent = dateStr;
+    solutionElement.textContent = solutionStr;
+
+    // Update click-to-copy for the new solution
+    solutionElement.style.cursor = 'pointer';
+    solutionElement.setAttribute('title', 'Click to copy');
+    // Remove old event listener to prevent multiple listeners if any
+    const newSolutionElement = solutionElement.cloneNode(true);
+    solutionElement.parentNode.replaceChild(newSolutionElement, solutionElement);
+    
+    newSolutionElement.addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(solutionStr);
+            showCopyFeedback('Copied to clipboard!');
+        } catch (err) {
+            console.error('Failed to copy:', err);
+            showCopyFeedback('Failed to copy!');
+        }
+    });
+
+
+    const puzzleDisplay = document.getElementById('puzzle-display');
+    puzzleDisplay.innerHTML = ''; // Clear previous puzzle
+    
+    const addedDate = addedUtcStr ? new Date(addedUtcStr) : null;
+    let timeContainer = null;
+    if (addedDate) {
+        timeContainer = document.createElement('div');
+        timeContainer.className = 'puzzle-timestamp';
+        timeContainer.textContent = `Added: ${addedDate.toLocaleTimeString([], { 
+            hour: 'numeric', 
+            minute: '2-digit',
+            hour12: true 
+        })}`;
+    }
+
+    const wordContainer = document.createElement('div');
+    wordContainer.className = 'word-container';
+    puzzleDisplay.appendChild(wordContainer);
+
+    const allTiles = [];
+    const words = solutionStr.split(/\s+/);
+    
+    const MAX_CHARS_PER_LINE = 14; 
+    let currentLineElement = null;
+    let currentLineCharCount = 0;
+
+    words.forEach((word) => {
+        const wordLength = word.length;
+        const spaceNeededForThisWord = currentLineCharCount > 0 ? 1 + wordLength : wordLength;
+
+        if (currentLineElement === null || (currentLineCharCount + spaceNeededForThisWord > MAX_CHARS_PER_LINE && currentLineCharCount > 0)) {
+            currentLineElement = document.createElement('div');
+            currentLineElement.className = 'word-row';
+            wordContainer.appendChild(currentLineElement);
+            currentLineCharCount = 0;
+        }
+
+        if (currentLineCharCount > 0) {
+            const spaceTile = document.createElement('div');
+            spaceTile.className = 'letter-tile space-tile';
+            spaceTile.innerHTML = ' ';
+            currentLineElement.appendChild(spaceTile);
+            currentLineCharCount += 1;
+        }
+
+        [...word.toUpperCase()].forEach(letter => {
+            const tile = document.createElement('div');
+            tile.className = 'letter-tile';
+            tile.textContent = letter;
+            currentLineElement.appendChild(tile);
+            allTiles.push(tile);
+        });
+        currentLineCharCount += wordLength;
+    });
+
+    if (timeContainer) {
+         puzzleDisplay.appendChild(timeContainer);
+    }
+
+    shuffleArray(allTiles); 
+    allTiles.forEach((tile, index) => {
+        setTimeout(() => {
+            tile.classList.add('revealed');
+        }, index * 50); 
+    });
+
+    // Scroll to the top to see the newly displayed puzzle
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+// --- END NEW FUNCTION ---
+
+
 async function fetchData() {
     try {
         const response = await fetch(`data.json?rand=${Date.now()}`);
         const data = await response.json();
         
-        const dateElement = document.getElementById('date');
-        const solutionElement = document.getElementById('solution');
-        
-        dateElement.textContent = data.date;
-        solutionElement.textContent = data.solution;
+        // Use the new function to display the fetched current puzzle
+        displayPuzzleOnBoard(data.date, data.solution, data.added_utc);
 
         // Auto-refresh check every 5 minutes
         if (Date.now() - lastUpdateCheck > 300000) { 
             const freshCheck = await fetch(`data.json?rand=${Date.now()}`);
             const freshData = await freshCheck.json();
-            if (freshData.date !== data.date || freshData.solution !== data.solution) { // Check solution too for rare cases
+            // If current puzzle data changed, reload the page to fetch and display it
+            if (freshData.date !== data.date || freshData.solution !== data.solution) { 
                 window.location.reload(true);
             }
             lastUpdateCheck = Date.now();
         }
-
-        // Click-to-copy functionality
-        solutionElement.style.cursor = 'pointer';
-        solutionElement.setAttribute('title', 'Click to copy');
-        solutionElement.addEventListener('click', async () => {
-            try {
-                await navigator.clipboard.writeText(data.solution);
-                showCopyFeedback('Copied to clipboard!');
-            } catch (err) {
-                console.error('Failed to copy:', err);
-                showCopyFeedback('Failed to copy!');
-            }
-        });
-
-        const puzzleDisplay = document.getElementById('puzzle-display');
-        puzzleDisplay.innerHTML = ''; // Clear previous puzzle
-        
-        const addedDate = data.added_utc ? new Date(data.added_utc) : null;
-        let timeContainer = null; // Declare here to append later
-        if (addedDate) {
-            timeContainer = document.createElement('div');
-            timeContainer.className = 'puzzle-timestamp';
-            timeContainer.textContent = `Added: ${addedDate.toLocaleTimeString([], { 
-                hour: 'numeric', 
-                minute: '2-digit',
-                hour12: true 
-            })}`;
-        }
-
-        const wordContainer = document.createElement('div');
-        wordContainer.className = 'word-container';
-        puzzleDisplay.appendChild(wordContainer); // Add wordContainer to the display
-
-        const allTiles = []; // To store actual letter tiles for animation
-        const words = data.solution.split(/\s+/);
-        
-        // --- NEW LINE BREAKING LOGIC ---
-        const MAX_CHARS_PER_LINE = 14; // Adjust this (e.g., 12-14) for best visual fit
-        let currentLineElement = null;
-        let currentLineCharCount = 0;
-
-        words.forEach((word) => { // Removed wordIndex as it's not used here
-            const wordLength = word.length;
-            const spaceNeededForThisWord = currentLineCharCount > 0 ? 1 + wordLength : wordLength;
-
-            // If currentLineElement is null (first line) OR if the current word doesn't fit on the current line
-            if (currentLineElement === null || (currentLineCharCount + spaceNeededForThisWord > MAX_CHARS_PER_LINE && currentLineCharCount > 0)) {
-                // Start a new line
-                currentLineElement = document.createElement('div');
-                currentLineElement.className = 'word-row';
-                wordContainer.appendChild(currentLineElement);
-                currentLineCharCount = 0; // Reset char count for the new line
-            }
-
-            // Add space tile if it's not the first word on this (current or new) line
-            if (currentLineCharCount > 0) {
-                const spaceTile = document.createElement('div');
-                spaceTile.className = 'letter-tile space-tile';
-                spaceTile.innerHTML = ' '; // Visually empty, but takes up space
-                currentLineElement.appendChild(spaceTile);
-                currentLineCharCount += 1; // Account for the space character
-            }
-
-            // Add letter tiles for the current word
-            [...word.toUpperCase()].forEach(letter => {
-                const tile = document.createElement('div');
-                tile.className = 'letter-tile';
-                tile.textContent = letter;
-                currentLineElement.appendChild(tile);
-                allTiles.push(tile); // Add to allTiles for reveal animation
-            });
-            currentLineCharCount += wordLength; // Add length of the word
-        });
-        // --- END NEW LINE BREAKING LOGIC ---
-
-        if (timeContainer) { // Append timestamp after puzzle, relying on absolute CSS positioning
-             puzzleDisplay.appendChild(timeContainer);
-        }
-
-        // Shuffle and reveal only actual letter tiles
-        shuffleArray(allTiles); 
-        allTiles.forEach((tile, index) => {
-            setTimeout(() => {
-                tile.classList.add('revealed');
-            }, index * 50); // Stagger reveal animation
-        });
+        // Note: Click-to-copy is now handled within displayPuzzleOnBoard
 
     } catch (error) {
-        console.error('Error fetching or displaying data:', error);
-        // Optionally, display a user-friendly error message on the page
+        console.error('Error fetching or displaying current data:', error);
         const puzzleDisplay = document.getElementById('puzzle-display');
-        if(puzzleDisplay) puzzleDisplay.textContent = "Could not load puzzle. Please try again later.";
+        if(puzzleDisplay) puzzleDisplay.textContent = "Could not load current puzzle. Please try again later.";
+        // Also update info panel for consistency
+        const dateElement = document.getElementById('date');
+        const solutionElement = document.getElementById('solution');
+        if(dateElement) dateElement.textContent = "Error";
+        if(solutionElement) solutionElement.textContent = "Error";
+
     }
 }
 
@@ -131,31 +147,26 @@ function showCopyFeedback(message) {
     feedback.setAttribute('aria-live', 'polite');
     feedback.textContent = message;
     
-    // Clear existing feedback
     const existing = document.querySelector('.copy-feedback');
     if (existing) existing.remove();
     
     document.body.appendChild(feedback);
-    
-    // Force reflow to enable animation
-    void feedback.offsetWidth;
-    
+    void feedback.offsetWidth; 
     feedback.style.opacity = '1';
     
     setTimeout(() => {
         feedback.style.opacity = '0';
-        setTimeout(() => feedback.remove(), 500); // Remove after fade out
+        setTimeout(() => feedback.remove(), 500);
     }, 1500);
 }
 
 async function loadHistory() {
     try {
         const response = await fetch(`past-solutions.json?rand=${Date.now()}`);
-        const pastSolutions = await response.json(); // Already sorted most recent first from Python
+        const pastSolutions = await response.json();
         const list = document.getElementById('solution-list');
         
         list.innerHTML = pastSolutions
-            // .reverse() // Removed as past-solutions.json is already sorted recent first
             .map(item => {
                 const addedDate = item.added_utc ? new Date(item.added_utc) : null;
                 const timeString = addedDate ? 
@@ -164,8 +175,19 @@ async function loadHistory() {
                         minute: '2-digit',
                         hour12: true 
                     }) : '';
+                
+                // Escape quotes in item data for use in inline JS
+                const safeDate = item.date.replace(/'/g, "\\'");
+                const safeSolution = item.solution.replace(/'/g, "\\'");
+                const safeAddedUtc = item.added_utc ? item.added_utc.replace(/'/g, "\\'") : '';
+
                 return `
-                    <div class="history-solution-item">
+                    <div class="history-solution-item" 
+                         onclick="displayPuzzleOnBoard('${safeDate}', '${safeSolution}', '${safeAddedUtc}')"
+                         title="Click to view this puzzle on the board"
+                         role="button" 
+                         tabindex="0" 
+                         onkeypress="if(event.key==='Enter' || event.key===' ') { displayPuzzleOnBoard('${safeDate}', '${safeSolution}', '${safeAddedUtc}'); event.preventDefault(); }">
                         <div class="history-date" ${timeString ? `title="Added at ${timeString}"` : ''}>
                             ${item.date}
                         </div>
