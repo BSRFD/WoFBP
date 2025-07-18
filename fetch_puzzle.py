@@ -227,8 +227,31 @@ def main():
                 sys.exit(EXIT_CODE_SUCCESS)
         
         else: # api_date < today_et_yyyymmdd
-            log_warning(f"API data is old (API date: {api_date}, Today: {today_et_yyyymmdd}). Will retry for current data.")
-            sys.exit(EXIT_CODE_RETRY_NEEDED)
+            # --- START: FIX FOR API DATE TYPOS ---
+            # If the API date is old, but the solution is NEW compared to what's stored,
+            # we assume the API has a date typo and this is actually today's puzzle.
+            if api_solution != stored_puzzle_data.get('solution'):
+                log_warning(f"API date ({api_date}) is old, but solution is new. Assuming date typo and using today's date ({today_et_yyyymmdd}).")
+                
+                # Archive the previously stored solution
+                archive_solution_if_needed(stored_puzzle_data.get('solution'), stored_puzzle_data.get('date'))
+
+                # Write the new data, but critically, use TODAY'S date, not the incorrect one from the API.
+                with open(DATA_FILE, 'w') as f:
+                    json.dump({
+                        "date": today_et_yyyymmdd, # Using today's date
+                        "solution": api_solution,
+                        "added_utc": datetime.now(timezone.utc).isoformat()
+                    }, f, indent=2)
+
+                print(f"Updated: {today_et_yyyymmdd} - {api_solution}") # Report success using correct date
+                sys.exit(EXIT_CODE_SUCCESS)
+            else:
+                # This is the original behavior: the API date is old, and the solution is also the same old one.
+                # This means the API truly hasn't updated yet, so we should retry.
+                log_warning(f"API data is old (API date: {api_date}, Today: {today_et_yyyymmdd}) and solution is unchanged. Will retry for current data.")
+                sys.exit(EXIT_CODE_RETRY_NEEDED)
+            # --- END: FIX FOR API DATE TYPOS ---
 
     except SystemExit: # Allow sys.exit() to propagate
         raise
